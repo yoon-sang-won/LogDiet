@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"logdiet/internal/compact"
+	"github.com/yoon-sang-won/LogDiet/internal/compact"
 )
 
 func TestSaveRunWritesFilesAndLatest(t *testing.T) {

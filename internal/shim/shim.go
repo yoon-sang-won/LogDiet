@@ -66,6 +66,10 @@ func commandCandidates(name string) []string {
 	if runtime.GOOS != "windows" {
 		return []string{name}
 	}
+	return windowsCommandCandidates(name)
+}
+
+func windowsCommandCandidates(name string) []string {
 	ext := strings.ToLower(filepath.Ext(name))
 	if ext != "" {
 		return []string{name}

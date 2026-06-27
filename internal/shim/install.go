@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"strings"
 
-	"logdiet/internal/store"
+	"github.com/yoon-sang-won/LogDiet/internal/store"
 )
 
 const marker = "LOGDIET MANAGED SHIM"

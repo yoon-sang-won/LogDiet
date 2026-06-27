@@ -42,3 +42,48 @@ func TestResolveRealCommandSkipsShimDir(t *testing.T) {
 		t.Fatalf("sanitized PATH still has shim dir: %q", clean)
 	}
 }
+
+func TestInstallCreatesManagedShimsIdempotently(t *testing.T) {
+	root := t.TempDir()
+	exe := filepath.Join(root, "logdiet-test.exe")
+	if err := os.WriteFile(exe, []byte("binary"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Install(root, exe, InstallOptions{}); err != nil {
+		t.Fatalf("Install first: %v", err)
+	}
+	if _, err := Install(root, exe, InstallOptions{}); err != nil {
+		t.Fatalf("Install second: %v", err)
+	}
+	bin := filepath.Join(root, ".logdiet", "bin")
+	for _, cmd := range ShimCommands {
+		path := filepath.Join(bin, cmd)
+		if runtime.GOOS == "windows" {
+			path += ".cmd"
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("missing shim %s: %v", cmd, err)
+		}
+		if !strings.Contains(string(b), marker) {
+			t.Fatalf("shim %s missing marker:\n%s", cmd, string(b))
+		}
+		if runtime.GOOS != "windows" {
+			info, err := os.Stat(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if info.Mode().Perm()&0111 == 0 {
+				t.Fatalf("unix shim %s is not executable: %v", path, info.Mode())
+			}
+		}
+	}
+}
+
+func TestCommandCandidatesIncludesWindowsExtensions(t *testing.T) {
+	got := windowsCommandCandidates("tool")
+	want := []string{"tool.exe", "tool.cmd", "tool.bat", "tool.com"}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("candidates=%v want %v", got, want)
+	}
+}

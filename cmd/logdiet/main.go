@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"logdiet/internal/cli"
+	"github.com/yoon-sang-won/LogDiet/internal/cli"
 )
 
 func main() {

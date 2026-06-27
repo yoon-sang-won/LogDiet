@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"logdiet/internal/compact"
-	"logdiet/internal/version"
+	"github.com/yoon-sang-won/LogDiet/internal/compact"
+	"github.com/yoon-sang-won/LogDiet/internal/version"
 )
 
 type RunData struct {

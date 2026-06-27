@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"logdiet/internal/textutil"
+	"github.com/yoon-sang-won/LogDiet/internal/textutil"
 )
 
 func Compact(cmd []string, stdout []byte, stderr []byte, combined []byte, exitCode int) Result {

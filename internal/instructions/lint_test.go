@@ -65,6 +65,43 @@ func TestInstallRulesIsIdempotent(t *testing.T) {
 	}
 }
 
+func TestRulesTargetsIncludeCursorAntigravityAndAll(t *testing.T) {
+	dir := t.TempDir()
+	for _, target := range []string{"generic", "codex", "claude", "cursor", "antigravity", "gemini"} {
+		if _, err := InstallRules(dir, target, false); err != nil {
+			t.Fatalf("InstallRules(%s): %v", target, err)
+		}
+	}
+	wantFiles := []string{
+		filepath.Join(".logdiet", "LOGDIET_RULES.md"),
+		"AGENTS.md",
+		"CLAUDE.md",
+		filepath.Join(".cursor", "rules", "logdiet.mdc"),
+		filepath.Join(".agents", "rules", "logdiet.md"),
+		"GEMINI.md",
+	}
+	for _, rel := range wantFiles {
+		b, err := os.ReadFile(filepath.Join(dir, rel))
+		if err != nil {
+			t.Fatalf("missing %s: %v", rel, err)
+		}
+		s := string(b)
+		if strings.Count(s, BeginMarker) != 1 || strings.Count(s, EndMarker) != 1 {
+			t.Fatalf("%s should contain exactly one managed section:\n%s", rel, s)
+		}
+		if strings.Contains(strings.ToLower(s), "generated at") || strings.Contains(strings.ToLower(s), "timestamp") {
+			t.Fatalf("%s contains generated timestamp-like text:\n%s", rel, s)
+		}
+	}
+	cursor, err := os.ReadFile(filepath.Join(dir, ".cursor", "rules", "logdiet.mdc"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(string(cursor), "---\nalwaysApply: true\n---\n") {
+		t.Fatalf("cursor rule missing frontmatter:\n%s", string(cursor))
+	}
+}
+
 func TestRulesInstallReplaceAndRemoveManagedSection(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "AGENTS.md")
@@ -156,5 +193,32 @@ func TestFixTextReplacesAbsolutePathsWithPlaceholders(t *testing.T) {
 	}
 	if strings.Contains(got, "/<home>/") || strings.Contains(got, "$1") || strings.Contains(got, "$2") {
 		t.Fatalf("fixed text contains invalid replacement artifact:\n%s", got)
+	}
+}
+
+func TestLintScansAntigravityRulesAndJSONStable(t *testing.T) {
+	dir := t.TempDir()
+	rulesDir := filepath.Join(dir, ".agents", "rules")
+	if err := os.MkdirAll(rulesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(rulesDir, "logdiet.md"), []byte("Generated at 2026-06-27\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	findings, err := Lint(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(findings) == 0 || findings[0].File != ".agents/rules/logdiet.md" {
+		t.Fatalf("expected antigravity rule finding, got %#v", findings)
+	}
+	jsonOut, err := FindingsJSON(findings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"id": "I1"`, `"file": ".agents/rules/logdiet.md"`, `"kind": "timestamp"`} {
+		if !strings.Contains(jsonOut, want) {
+			t.Fatalf("JSON output missing %s:\n%s", want, jsonOut)
+		}
 	}
 }

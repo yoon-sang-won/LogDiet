@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"logdiet/internal/textutil"
+	"github.com/yoon-sang-won/LogDiet/internal/textutil"
 )
 
 func compactGitStatus(res Result, combined []byte) Result {

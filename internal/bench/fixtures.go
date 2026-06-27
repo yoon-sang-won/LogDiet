@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"logdiet/internal/compact"
-	"logdiet/internal/textutil"
+	"github.com/yoon-sang-won/LogDiet/internal/compact"
+	"github.com/yoon-sang-won/LogDiet/internal/textutil"
 )
 
 type FixtureResult struct {

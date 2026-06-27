@@ -54,6 +54,7 @@ func InstallRules(root, target string, dryRun bool) (string, error) {
 			content = existing + sep + "\n" + block
 		}
 	}
+	content = ensureRulePrefix(content, prefix)
 	if dryRun {
 		return fmt.Sprintf("would write %s\n", rel(root, path)), nil
 	}
@@ -67,6 +68,13 @@ func InstallRules(root, target string, dryRun bool) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("installed rules: %s\n", rel(root, path)), nil
+}
+
+func ensureRulePrefix(content, prefix string) string {
+	if prefix == "" || strings.HasPrefix(content, "---\n") {
+		return content
+	}
+	return prefix + content
 }
 
 func RemoveRules(root, target string) (string, error) {
@@ -103,6 +111,8 @@ func rulesPath(root, target string) (string, string, error) {
 		return filepath.Join(root, "GEMINI.md"), "", nil
 	case "cursor":
 		return filepath.Join(root, ".cursor", "rules", "logdiet.mdc"), "---\nalwaysApply: true\n---\n\n", nil
+	case "antigravity":
+		return filepath.Join(root, ".agents", "rules", "logdiet.md"), "", nil
 	default:
 		return "", "", fmt.Errorf("unknown rules target %q", target)
 	}

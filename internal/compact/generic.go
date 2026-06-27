@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"logdiet/internal/textutil"
+	"github.com/yoon-sang-won/LogDiet/internal/textutil"
 )
 
 var signalWords = []string{

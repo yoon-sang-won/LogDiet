@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"logdiet/internal/store"
-	"logdiet/internal/textutil"
+	"github.com/yoon-sang-won/LogDiet/internal/store"
+	"github.com/yoon-sang-won/LogDiet/internal/textutil"
 )
 
 type Finding struct {
@@ -265,7 +265,13 @@ func instructionFiles(root string) ([]string, error) {
 	for _, relp := range []string{"AGENTS.md", "CLAUDE.md", "GEMINI.md", filepath.Join(".github", "copilot-instructions.md")} {
 		add(filepath.Join(root, relp))
 	}
-	for _, pattern := range []string{filepath.Join(root, ".cursor", "rules", "*.mdc"), filepath.Join(root, ".codex", "*.md"), filepath.Join(root, ".opencode", "*.md"), filepath.Join(root, ".aider*")} {
+	for _, pattern := range []string{
+		filepath.Join(root, ".cursor", "rules", "*.mdc"),
+		filepath.Join(root, ".agents", "rules", "*.md"),
+		filepath.Join(root, ".codex", "*.md"),
+		filepath.Join(root, ".opencode", "*.md"),
+		filepath.Join(root, ".aider*"),
+	} {
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
 			return nil, err

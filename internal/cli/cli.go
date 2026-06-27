@@ -6,18 +6,21 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 
-	"logdiet/internal/bench"
-	"logdiet/internal/compact"
-	"logdiet/internal/instructions"
-	"logdiet/internal/run"
-	"logdiet/internal/shim"
-	"logdiet/internal/store"
-	"logdiet/internal/textutil"
-	"logdiet/internal/version"
+	"github.com/yoon-sang-won/LogDiet/internal/bench"
+	"github.com/yoon-sang-won/LogDiet/internal/compact"
+	"github.com/yoon-sang-won/LogDiet/internal/instructions"
+	"github.com/yoon-sang-won/LogDiet/internal/run"
+	"github.com/yoon-sang-won/LogDiet/internal/shim"
+	"github.com/yoon-sang-won/LogDiet/internal/store"
+	"github.com/yoon-sang-won/LogDiet/internal/textutil"
+	"github.com/yoon-sang-won/LogDiet/internal/version"
 )
+
+var ruleTargets = []string{"generic", "codex", "claude", "cursor", "antigravity", "gemini"}
 
 func Run(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
@@ -44,6 +47,10 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return grepCommand(root, args[1:], stdout, stderr)
 	case "install":
 		return installCommand(root, args[1:], stdout, stderr)
+	case "setup":
+		return setupCommand(root, args[1:], stdout, stderr)
+	case "doctor":
+		return doctorCommand(root, args[1:], stdout, stderr)
 	case "uninstall":
 		return uninstallCommand(root, args[1:], stdout, stderr)
 	case "shim":
@@ -67,6 +74,8 @@ func helpText() string {
 
 common commands:
   logdiet install
+  logdiet setup codex
+  logdiet doctor
   logdiet env
   logdiet wrap -- pytest -q
   logdiet show latest:F1 --around 40
@@ -339,7 +348,7 @@ func uninstallCommand(root string, args []string, stdout, stderr io.Writer) int 
 	}
 	fmt.Fprint(stdout, msg)
 	if rules {
-		for _, target := range []string{"generic", "codex", "claude", "gemini", "cursor"} {
+		for _, target := range ruleTargets {
 			msg, err := instructions.RemoveRules(root, target)
 			if err != nil {
 				fmt.Fprintf(stderr, "error: %v\n", err)
@@ -349,6 +358,226 @@ func uninstallCommand(root string, args []string, stdout, stderr io.Writer) int 
 		}
 	}
 	return 0
+}
+
+func setupCommand(root string, args []string, stdout, stderr io.Writer) int {
+	if len(args) != 1 {
+		fmt.Fprintln(stderr, "usage: logdiet setup <codex|claude|cursor|antigravity|gemini|generic|all>")
+		return 2
+	}
+	agent := args[0]
+	targets, err := setupTargets(agent)
+	if err != nil {
+		fmt.Fprintf(stderr, "usage error: %v\n", err)
+		return 2
+	}
+	if _, err := shim.Install(root, "", shim.InstallOptions{}); err != nil {
+		fmt.Fprintf(stderr, "error: installing shims: %v\n", err)
+		return 1
+	}
+	fmt.Fprintf(stdout, "LogDiet setup: %s\n\n", agent)
+	fmt.Fprintln(stdout, "state: .logdiet OK")
+	fmt.Fprintln(stdout, "shims: .logdiet/bin OK")
+	for _, target := range targets {
+		if _, err := instructions.InstallRules(root, target, false); err != nil {
+			fmt.Fprintf(stderr, "error: installing %s rules: %v\n", target, err)
+			return 1
+		}
+		fmt.Fprintf(stdout, "rules: %s installed\n", ruleDisplayPath(target))
+	}
+	fmt.Fprintln(stdout)
+	fmt.Fprintln(stdout, "activate:")
+	fmt.Fprintln(stdout, `  eval "$(logdiet env)"`)
+	fmt.Fprintln(stdout, `  Invoke-Expression (logdiet env --shell powershell)`)
+	fmt.Fprintln(stdout)
+	fmt.Fprintln(stdout, "verify:")
+	fmt.Fprintln(stdout, "  logdiet doctor")
+	return 0
+}
+
+func setupTargets(agent string) ([]string, error) {
+	switch agent {
+	case "generic", "codex", "claude", "cursor", "antigravity", "gemini":
+		return []string{agent}, nil
+	case "all":
+		return append([]string{}, ruleTargets...), nil
+	default:
+		return nil, fmt.Errorf("unknown setup target %q", agent)
+	}
+}
+
+func ruleDisplayPath(target string) string {
+	switch target {
+	case "generic":
+		return ".logdiet/LOGDIET_RULES.md"
+	case "codex":
+		return "AGENTS.md"
+	case "claude":
+		return "CLAUDE.md"
+	case "cursor":
+		return ".cursor/rules/logdiet.mdc"
+	case "antigravity":
+		return ".agents/rules/logdiet.md"
+	case "gemini":
+		return "GEMINI.md"
+	default:
+		return target
+	}
+}
+
+func doctorCommand(root string, args []string, stdout, stderr io.Writer) int {
+	if len(args) != 0 {
+		fmt.Fprintln(stderr, "usage: logdiet doctor")
+		return 2
+	}
+	exe, _ := os.Executable()
+	stateDir := filepath.Join(root, ".logdiet")
+	binDir := filepath.Join(stateDir, "bin")
+	pathValue := os.Getenv("PATH")
+	pathParts := filepath.SplitList(pathValue)
+	binInPath := pathContains(pathParts, binDir)
+	binFirst := len(pathParts) > 0 && samePath(pathParts[0], binDir)
+	shimCount := countInstalledShims(binDir)
+	healthy := dirExists(binDir) && shimCount > 0 && binInPath
+
+	fmt.Fprintln(stdout, "LogDiet doctor")
+	fmt.Fprintln(stdout)
+	fmt.Fprintf(stdout, "binary: %s\n", exe)
+	fmt.Fprintf(stdout, "cwd: %s\n", root)
+	if dirExists(stateDir) {
+		fmt.Fprintln(stdout, "state: .logdiet OK")
+	} else {
+		fmt.Fprintln(stdout, "state: .logdiet missing")
+	}
+	if dirExists(binDir) {
+		fmt.Fprintln(stdout, "bin: .logdiet/bin OK")
+	} else {
+		fmt.Fprintln(stdout, "bin: .logdiet/bin missing")
+	}
+	switch {
+	case binFirst:
+		fmt.Fprintln(stdout, "PATH: .logdiet/bin is first OK")
+	case binInPath:
+		fmt.Fprintln(stdout, "PATH: .logdiet/bin present")
+	default:
+		fmt.Fprintln(stdout, "PATH: .logdiet/bin missing")
+	}
+	fmt.Fprintln(stdout)
+	fmt.Fprintln(stdout, "environment:")
+	fmt.Fprintf(stdout, "  LOGDIET_ACTIVE: %s\n", envValue("LOGDIET_ACTIVE", "unset"))
+	fmt.Fprintf(stdout, "  LOGDIET_BYPASS: %s\n", envValue("LOGDIET_BYPASS", "unset"))
+	fmt.Fprintf(stdout, "  LOGDIET_MODE: %s\n", envValue("LOGDIET_MODE", "auto"))
+	fmt.Fprintln(stdout)
+	fmt.Fprintln(stdout, "shims:")
+	for _, cmd := range shim.ShimCommands {
+		status := "missing"
+		if fileExists(shimFilePath(binDir, cmd)) {
+			status = "OK"
+		}
+		fmt.Fprintf(stdout, "  %s %s\n", cmd, status)
+	}
+	fmt.Fprintln(stdout)
+	fmt.Fprintln(stdout, "real commands:")
+	for _, cmd := range shim.ShimCommands {
+		real, err := shim.ResolveRealCommand(cmd, binDir, pathValue, exe)
+		if err != nil {
+			fmt.Fprintf(stdout, "  %s -> not found\n", cmd)
+			continue
+		}
+		fmt.Fprintf(stdout, "  %s -> %s\n", cmd, real)
+	}
+	fmt.Fprintln(stdout)
+	fmt.Fprintln(stdout, "agent rules:")
+	for _, entry := range []struct {
+		label  string
+		target string
+	}{
+		{"Codex", "codex"},
+		{"Claude", "claude"},
+		{"Cursor", "cursor"},
+		{"Antigravity", "antigravity"},
+		{"Gemini", "gemini"},
+		{"Generic", "generic"},
+	} {
+		status := "missing"
+		if fileExists(filepath.Join(root, filepath.FromSlash(ruleDisplayPath(entry.target)))) {
+			status = "installed"
+		}
+		fmt.Fprintf(stdout, "  %s %s: %s\n", entry.label, ruleDisplayPath(entry.target), status)
+	}
+	if latest, err := store.LatestRunID(root); err == nil {
+		fmt.Fprintln(stdout)
+		fmt.Fprintf(stdout, "latest run: %s\n", latest)
+	}
+	if !healthy {
+		fmt.Fprintln(stdout)
+		fmt.Fprintln(stdout, "next:")
+		fmt.Fprintln(stdout, "  logdiet setup codex")
+		fmt.Fprintln(stdout, `  eval "$(logdiet env)"`)
+		return 1
+	}
+	return 0
+}
+
+func pathContains(parts []string, dir string) bool {
+	for _, p := range parts {
+		if samePath(p, dir) {
+			return true
+		}
+	}
+	return false
+}
+
+func samePath(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+	aa, errA := filepath.Abs(a)
+	bb, errB := filepath.Abs(b)
+	if errA == nil {
+		a = aa
+	}
+	if errB == nil {
+		b = bb
+	}
+	if runtime.GOOS == "windows" {
+		return strings.EqualFold(filepath.Clean(a), filepath.Clean(b))
+	}
+	return filepath.Clean(a) == filepath.Clean(b)
+}
+
+func countInstalledShims(binDir string) int {
+	count := 0
+	for _, cmd := range shim.ShimCommands {
+		if fileExists(shimFilePath(binDir, cmd)) {
+			count++
+		}
+	}
+	return count
+}
+
+func shimFilePath(binDir, cmd string) string {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(binDir, cmd+".cmd")
+	}
+	return filepath.Join(binDir, cmd)
+}
+
+func envValue(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
+}
+
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
 }
 
 func shimCommand(root string, args []string, stdout, stderr io.Writer) int {
@@ -441,7 +670,7 @@ func rulesCommand(root string, args []string, stdout, stderr io.Writer) int {
 		}
 	}
 	if install == "all" {
-		for _, target := range []string{"generic", "codex", "claude", "gemini", "cursor"} {
+		for _, target := range ruleTargets {
 			msg, err := instructions.InstallRules(root, target, dryRun)
 			if err != nil {
 				fmt.Fprintf(stderr, "error: %v\n", err)

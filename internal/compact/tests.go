@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"logdiet/internal/textutil"
+	"github.com/yoon-sang-won/LogDiet/internal/textutil"
 )
 
 var (

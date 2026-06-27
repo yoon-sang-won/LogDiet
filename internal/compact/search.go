@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"logdiet/internal/textutil"
+	"github.com/yoon-sang-won/LogDiet/internal/textutil"
 )
 
 func compactSearch(res Result, combined []byte) Result {

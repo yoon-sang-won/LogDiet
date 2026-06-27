@@ -1,6 +1,6 @@
 package store
 
-import "logdiet/internal/compact"
+import "github.com/yoon-sang-won/LogDiet/internal/compact"
 
 type RawPaths struct {
 	Stdout   string `json:"stdout"`
