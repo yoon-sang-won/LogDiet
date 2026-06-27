@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"os/exec"
 	"time"
 )
@@ -39,50 +38,23 @@ func Capture(args []string) (CaptureResult, error) {
 		return res, &ExitError{Code: 2, Err: fmt.Errorf("missing command")}
 	}
 	cmd := exec.Command(args[0], args[1:]...)
-	stdoutPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		res.ExitCode = 1
-		return res, err
-	}
-	stderrPipe, err := cmd.StderrPipe()
-	if err != nil {
-		res.ExitCode = 1
-		return res, err
-	}
 	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	res.StartedAt = time.Now().UTC()
-	if err := cmd.Start(); err != nil {
-		res.EndedAt = time.Now().UTC()
-		res.ExitCode = 127
-		return res, &ExitError{Code: 127, Err: err}
-	}
-	outDone := make(chan error, 1)
-	errDone := make(chan error, 1)
-	go func() { _, e := io.Copy(&stdout, stdoutPipe); outDone <- e }()
-	go func() { _, e := io.Copy(&stderr, stderrPipe); errDone <- e }()
-	waitErr := cmd.Wait()
-	copyErr1 := <-outDone
-	copyErr2 := <-errDone
+	waitErr := cmd.Run()
 	res.EndedAt = time.Now().UTC()
 	res.Stdout = stdout.Bytes()
 	res.Stderr = stderr.Bytes()
 	res.Combined = append(append([]byte{}, res.Stdout...), res.Stderr...)
-	if copyErr1 != nil {
-		res.ExitCode = 1
-		return res, copyErr1
-	}
-	if copyErr2 != nil {
-		res.ExitCode = 1
-		return res, copyErr2
-	}
 	if waitErr != nil {
 		var ee *exec.ExitError
 		if errors.As(waitErr, &ee) {
 			res.ExitCode = ee.ExitCode()
 			return res, &ExitError{Code: res.ExitCode, Err: waitErr}
 		}
-		res.ExitCode = 1
-		return res, waitErr
+		res.ExitCode = 127
+		return res, &ExitError{Code: 127, Err: waitErr}
 	}
 	res.ExitCode = 0
 	return res, nil
