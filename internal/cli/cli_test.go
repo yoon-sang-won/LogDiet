@@ -104,7 +104,7 @@ func TestCLICommonCommands(t *testing.T) {
 	if code := Run([]string{"--version"}, &out, &errb); code != 0 {
 		t.Fatalf("version exit=%d err=%s", code, errb.String())
 	}
-	if strings.TrimSpace(out.String()) != "logdiet 0.1.0" {
+	if strings.TrimSpace(out.String()) != "logdiet 0.2.0-dev" {
 		t.Fatalf("bad version output: %q", out.String())
 	}
 	out.Reset()
@@ -128,6 +128,7 @@ func TestCLICommonCommands(t *testing.T) {
 		"logdiet show latest:F1 --around 40",
 		"logdiet raw latest",
 		"logdiet grep latest \"panic\"",
+		"logdiet hook rewrite --command \"go test ./...\"",
 	} {
 		if !strings.Contains(help, want) {
 			t.Fatalf("help missing %q:\n%s", want, help)
@@ -207,6 +208,53 @@ func TestCLICommonCommands(t *testing.T) {
 
 	out.Reset()
 	errb.Reset()
+}
+
+func TestCLIHookRewriteJSON(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "wrap",
+			in:   "go test ./...",
+			want: `{"wrap":true,"command":"logdiet wrap -- go test ./...","reason":"known noisy developer command"}` + "\n",
+		},
+		{
+			name: "no wrap",
+			in:   "echo hello",
+			want: `{"wrap":false,"command":"echo hello","reason":"not selected"}` + "\n",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var out, errb bytes.Buffer
+			code := Run([]string{"hook", "rewrite", "--command", tc.in}, &out, &errb)
+			if code != 0 {
+				t.Fatalf("hook rewrite exit=%d out=%s err=%s", code, out.String(), errb.String())
+			}
+			if out.String() != tc.want {
+				t.Fatalf("bad JSON:\n%s\nwant:\n%s", out.String(), tc.want)
+			}
+			if errb.String() != "" {
+				t.Fatalf("stderr should be empty: %s", errb.String())
+			}
+		})
+	}
+}
+
+func TestCLIHookRewriteUsageErrors(t *testing.T) {
+	var out, errb bytes.Buffer
+	code := Run([]string{"hook", "rewrite"}, &out, &errb)
+	if code != 2 {
+		t.Fatalf("hook rewrite usage exit=%d out=%s err=%s", code, out.String(), errb.String())
+	}
+	if out.String() != "" {
+		t.Fatalf("usage error should not write JSON stdout: %s", out.String())
+	}
+	if !strings.Contains(errb.String(), "usage: logdiet hook rewrite --command <command>") {
+		t.Fatalf("usage error missing help: %s", errb.String())
+	}
 }
 
 func TestCLIBenchFixturesFromRepo(t *testing.T) {
@@ -290,6 +338,65 @@ func TestSetupCodexAndAntigravity(t *testing.T) {
 	}
 }
 
+func TestSetupModes(t *testing.T) {
+	t.Run("rules only", func(t *testing.T) {
+		dir := t.TempDir()
+		oldwd, _ := os.Getwd()
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+		defer os.Chdir(oldwd)
+
+		var out, errb bytes.Buffer
+		if code := Run([]string{"setup", "codex", "--mode", "rules"}, &out, &errb); code != 0 {
+			t.Fatalf("setup rules exit=%d out=%s err=%s", code, out.String(), errb.String())
+		}
+		if _, err := os.Stat(filepath.Join(dir, "AGENTS.md")); err != nil {
+			t.Fatalf("rules mode did not install AGENTS.md: %v", err)
+		}
+		if _, err := os.Stat(filepath.Join(dir, ".logdiet", "bin")); !os.IsNotExist(err) {
+			t.Fatalf("rules mode should not install shims, err=%v", err)
+		}
+		if !strings.Contains(out.String(), "mode: rules") ||
+			!strings.Contains(out.String(), "rules: AGENTS.md") ||
+			strings.Contains(out.String(), "hook enabled") {
+			t.Fatalf("setup rules output is not explicit:\n%s", out.String())
+		}
+	})
+
+	t.Run("all installs shims and native templates", func(t *testing.T) {
+		dir := t.TempDir()
+		oldwd, _ := os.Getwd()
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+		defer os.Chdir(oldwd)
+
+		var out, errb bytes.Buffer
+		if code := Run([]string{"setup", "codex", "--mode", "all"}, &out, &errb); code != 0 {
+			t.Fatalf("setup all exit=%d out=%s err=%s", code, out.String(), errb.String())
+		}
+		if _, err := os.Stat(filepath.Join(dir, ".logdiet", "bin")); err != nil {
+			t.Fatalf("all mode did not install shims: %v", err)
+		}
+		if _, err := os.Stat(filepath.Join(dir, ".logdiet", "integrations", "codex", "hook-rewrite-template.sh")); err != nil {
+			t.Fatalf("all mode did not install native template: %v", err)
+		}
+		for _, want := range []string{
+			"mode: all",
+			"rules: AGENTS.md",
+			"shims: .logdiet/bin",
+			"native: template installed",
+			"review generated hook/plugin files",
+			"logdiet doctor",
+		} {
+			if !strings.Contains(out.String(), want) {
+				t.Fatalf("setup all output missing %q:\n%s", want, out.String())
+			}
+		}
+	})
+}
+
 func TestDoctorBeforeAndAfterInstall(t *testing.T) {
 	dir := t.TempDir()
 	oldwd, _ := os.Getwd()
@@ -323,6 +430,44 @@ func TestDoctorBeforeAndAfterInstall(t *testing.T) {
 		t.Fatalf("doctor after install exit=%d out=%s err=%s", code, out.String(), errb.String())
 	}
 	for _, want := range []string{"PATH: .logdiet/bin is first OK", "agent rules:", "Codex AGENTS.md:", "latest run: none"} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("doctor output missing %q:\n%s", want, out.String())
+		}
+	}
+}
+
+func TestDoctorShowsAgentNativeStatus(t *testing.T) {
+	dir := t.TempDir()
+	oldwd, _ := os.Getwd()
+	oldPath := os.Getenv("PATH")
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(oldwd)
+	defer os.Setenv("PATH", oldPath)
+
+	var out, errb bytes.Buffer
+	if code := Run([]string{"setup", "codex", "--mode", "all"}, &out, &errb); code != 0 {
+		t.Fatalf("setup all exit=%d out=%s err=%s", code, out.String(), errb.String())
+	}
+	bin := filepath.Join(dir, ".logdiet", "bin")
+	if err := os.Setenv("PATH", bin+string(os.PathListSeparator)+oldPath); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	errb.Reset()
+	if code := Run([]string{"doctor"}, &out, &errb); code != 0 {
+		t.Fatalf("doctor exit=%d out=%s err=%s", code, out.String(), errb.String())
+	}
+	for _, want := range []string{
+		"agent integrations:",
+		"Codex rules: AGENTS.md installed",
+		"Codex native: template installed",
+		"Claude Code skill: template missing",
+		"Cursor rules: .cursor/rules/logdiet.mdc missing",
+		"Gemini rules: GEMINI.md missing",
+		"Antigravity rules: .agents/rules/logdiet.md missing",
+	} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("doctor output missing %q:\n%s", want, out.String())
 		}

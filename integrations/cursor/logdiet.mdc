@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+
+# LogDiet rules
+
+- prefer LogDiet for noisy commands;
+- do not paste full logs;
+- expand compact evidence with `logdiet show latest:F1 --around 40`;
+- search raw output with `logdiet grep latest "pattern"`;
+- use `logdiet raw latest` only when needed;
+- keep responses concise.

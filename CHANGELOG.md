@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.2.0 - Unreleased
+
+### Changed
+
+- Repositioned LogDiet as an agent-native token diet layer powered by a local CLI engine.
+
+### Added
+
+- Agent integration packages under `integrations/`.
+- Command rewrite decision helper.
+- `logdiet hook rewrite` for hook/plugin adapters.
+- Agent-native documentation.
+- Setup modes for rules, shims, and native templates.
+- Doctor output for agent integration status.
+
+### Notes
+
+Automatic command rewriting is available where an agent supports command hooks. Other agents use rules/instructions fallback or manual `logdiet wrap`.
+
 ## v0.1.0 - Initial public release
 
 LogDiet v0.1.0 is the first public release of LogDiet, a local token-diet layer for AI coding agents.

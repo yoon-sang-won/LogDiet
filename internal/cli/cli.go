@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/yoon-sang-won/LogDiet/internal/agentrewrite"
 	"github.com/yoon-sang-won/LogDiet/internal/bench"
 	"github.com/yoon-sang-won/LogDiet/internal/compact"
 	"github.com/yoon-sang-won/LogDiet/internal/instructions"
@@ -57,6 +59,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return shimCommand(root, args[1:], stdout, stderr)
 	case "env":
 		return envCommand(args[1:], stdout)
+	case "hook":
+		return hookCommand(args[1:], stdout, stderr)
 	case "rules":
 		return rulesCommand(root, args[1:], stdout, stderr)
 	case "lint-instructions":
@@ -74,17 +78,70 @@ func helpText() string {
 
 common commands:
   logdiet install
-  logdiet setup codex
+  logdiet setup codex --mode all
   logdiet doctor
   logdiet env
   logdiet wrap -- pytest -q
   logdiet show latest:F1 --around 40
   logdiet raw latest
   logdiet grep latest "panic"
+  logdiet hook rewrite --command "go test ./..."
   logdiet lint-instructions
   logdiet rules --print
   logdiet bench-fixtures
 `
+}
+
+type hookRewriteResponse struct {
+	Wrap    bool   `json:"wrap"`
+	Command string `json:"command"`
+	Reason  string `json:"reason"`
+}
+
+func hookCommand(args []string, stdout, stderr io.Writer) int {
+	if len(args) != 3 || args[0] != "rewrite" || args[1] != "--command" || strings.TrimSpace(args[2]) == "" {
+		fmt.Fprintln(stderr, "usage: logdiet hook rewrite --command <command>")
+		return 2
+	}
+	command := strings.TrimSpace(args[2])
+	decision := agentrewrite.Decide(command)
+	response := hookRewriteResponse{
+		Wrap:    decision.Wrap,
+		Command: command,
+		Reason:  decision.Reason,
+	}
+	if decision.Wrap {
+		response.Command = "logdiet wrap -- " + shellJoin(decision.Command)
+	}
+	enc := json.NewEncoder(stdout)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(response); err != nil {
+		fmt.Fprintf(stderr, "error: encoding hook rewrite response: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+func shellJoin(args []string) string {
+	quoted := make([]string, 0, len(args))
+	for _, arg := range args {
+		quoted = append(quoted, shellQuote(arg))
+	}
+	return strings.Join(quoted, " ")
+}
+
+func shellQuote(arg string) string {
+	if arg == "" {
+		return "''"
+	}
+	for _, r := range arg {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') ||
+			strings.ContainsRune("_@%+=:,./-", r) {
+			continue
+		}
+		return "'" + strings.ReplaceAll(arg, "'", "'\\''") + "'"
+	}
+	return arg
 }
 
 func wrapCommand(root string, args []string, display []string, stdout, stderr io.Writer) int {
@@ -361,30 +418,56 @@ func uninstallCommand(root string, args []string, stdout, stderr io.Writer) int 
 }
 
 func setupCommand(root string, args []string, stdout, stderr io.Writer) int {
-	if len(args) != 1 {
-		fmt.Fprintln(stderr, "usage: logdiet setup <codex|claude|cursor|antigravity|gemini|generic|all>")
+	agent, mode, err := parseSetupArgs(args)
+	if err != nil {
+		fmt.Fprintf(stderr, "usage: %s\n", setupUsage())
 		return 2
 	}
-	agent := args[0]
 	targets, err := setupTargets(agent)
 	if err != nil {
 		fmt.Fprintf(stderr, "usage error: %v\n", err)
 		return 2
 	}
-	if _, err := shim.Install(root, "", shim.InstallOptions{}); err != nil {
-		fmt.Fprintf(stderr, "error: installing shims: %v\n", err)
-		return 1
+	installShims := mode == "shim" || mode == "all"
+	installNative := mode == "native" || mode == "all"
+	if installShims {
+		if _, err := shim.Install(root, "", shim.InstallOptions{}); err != nil {
+			fmt.Fprintf(stderr, "error: installing shims: %v\n", err)
+			return 1
+		}
 	}
 	fmt.Fprintf(stdout, "LogDiet setup: %s\n\n", agent)
-	fmt.Fprintln(stdout, "state: .logdiet OK")
-	fmt.Fprintln(stdout, "shims: .logdiet/bin OK")
+	fmt.Fprintf(stdout, "mode: %s\n\n", mode)
+	fmt.Fprintln(stdout, "installed:")
 	for _, target := range targets {
 		if _, err := instructions.InstallRules(root, target, false); err != nil {
 			fmt.Fprintf(stderr, "error: installing %s rules: %v\n", target, err)
 			return 1
 		}
-		fmt.Fprintf(stdout, "rules: %s installed\n", ruleDisplayPath(target))
+		fmt.Fprintf(stdout, "  rules: %s installed\n", ruleDisplayPath(target))
 	}
+	if installShims {
+		fmt.Fprintln(stdout, "  shims: .logdiet/bin OK")
+	} else {
+		fmt.Fprintln(stdout, "  shims: skipped")
+	}
+	if installNative {
+		for _, target := range targets {
+			path, err := installNativeTemplates(root, target)
+			if err != nil {
+				fmt.Fprintf(stderr, "error: installing %s native templates: %v\n", target, err)
+				return 1
+			}
+			fmt.Fprintf(stdout, "  native: template installed %s\n", path)
+		}
+	} else {
+		fmt.Fprintln(stdout, "  native: skipped")
+	}
+	fmt.Fprintln(stdout)
+	fmt.Fprintln(stdout, "next:")
+	fmt.Fprintln(stdout, "  1. review generated hook/plugin files")
+	fmt.Fprintln(stdout, "  2. trust/enable them in your agent if required")
+	fmt.Fprintln(stdout, "  3. run: logdiet doctor")
 	fmt.Fprintln(stdout)
 	fmt.Fprintln(stdout, "activate:")
 	fmt.Fprintln(stdout, `  eval "$(logdiet env)"`)
@@ -395,6 +478,36 @@ func setupCommand(root string, args []string, stdout, stderr io.Writer) int {
 	fmt.Fprintln(stdout, "verify:")
 	fmt.Fprintln(stdout, "  logdiet doctor")
 	return 0
+}
+
+func setupUsage() string {
+	return "logdiet setup <codex|claude|cursor|antigravity|gemini|generic|all> [--mode rules|shim|native|all]"
+}
+
+func parseSetupArgs(args []string) (string, string, error) {
+	if len(args) == 0 {
+		return "", "", fmt.Errorf("missing setup target")
+	}
+	agent := args[0]
+	mode := "shim"
+	for i := 1; i < len(args); i++ {
+		switch args[i] {
+		case "--mode":
+			if i+1 >= len(args) {
+				return "", "", fmt.Errorf("--mode requires value")
+			}
+			mode = args[i+1]
+			i++
+		case "--native":
+			mode = "native"
+		default:
+			return "", "", fmt.Errorf("unknown argument %q", args[i])
+		}
+	}
+	if !oneOf(mode, "rules", "shim", "native", "all") {
+		return "", "", fmt.Errorf("unknown mode %q", mode)
+	}
+	return agent, mode, nil
 }
 
 func setupTargets(agent string) ([]string, error) {
@@ -508,6 +621,14 @@ func doctorCommand(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "  %s %s: %s\n", entry.label, ruleDisplayPath(entry.target), status)
 	}
 	fmt.Fprintln(stdout)
+	fmt.Fprintln(stdout, "agent integrations:")
+	fmt.Fprintf(stdout, "  Codex rules: AGENTS.md %s\n", ruleInstallStatus(root, "codex"))
+	fmt.Fprintf(stdout, "  Codex native: %s\n", nativeTemplateStatus(root, "codex"))
+	fmt.Fprintf(stdout, "  Claude Code skill: %s\n", nativeTemplateStatus(root, "claude"))
+	fmt.Fprintf(stdout, "  Cursor rules: .cursor/rules/logdiet.mdc %s\n", ruleInstallStatus(root, "cursor"))
+	fmt.Fprintf(stdout, "  Gemini rules: GEMINI.md %s\n", ruleInstallStatus(root, "gemini"))
+	fmt.Fprintf(stdout, "  Antigravity rules: .agents/rules/logdiet.md %s\n", ruleInstallStatus(root, "antigravity"))
+	fmt.Fprintln(stdout)
 	if latest, err := store.LatestRunID(root); err == nil {
 		fmt.Fprintf(stdout, "latest run: %s\n", latest)
 	} else {
@@ -521,6 +642,13 @@ func doctorCommand(root string, args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	return 0
+}
+
+func ruleInstallStatus(root, target string) string {
+	if fileExists(filepath.Join(root, filepath.FromSlash(ruleDisplayPath(target)))) {
+		return "installed"
+	}
+	return "missing"
 }
 
 func pathContains(parts []string, dir string) bool {
