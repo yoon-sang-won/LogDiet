@@ -1,13 +1,13 @@
-ok  	logdiet/internal/store	0.010s
-ok  	logdiet/internal/textutil	0.006s
-ok  	logdiet/internal/version	0.004s
-ok  	logdiet/internal/shim	0.009s
-ok  	logdiet/internal/bench	0.008s
-ok  	logdiet/internal/instructions	0.015s
-ok  	logdiet/internal/run	0.012s
+ok  	github.com/yoon-sang-won/LogDiet/internal/store	0.010s
+ok  	github.com/yoon-sang-won/LogDiet/internal/textutil	0.006s
+ok  	github.com/yoon-sang-won/LogDiet/internal/version	0.004s
+ok  	github.com/yoon-sang-won/LogDiet/internal/shim	0.009s
+ok  	github.com/yoon-sang-won/LogDiet/internal/bench	0.008s
+ok  	github.com/yoon-sang-won/LogDiet/internal/instructions	0.015s
+ok  	github.com/yoon-sang-won/LogDiet/internal/run	0.012s
 --- FAIL: TestLogin (0.00s)
     auth_test.go:17: missing token
     auth_test.go:18: got empty authorization header
 FAIL
-FAIL	logdiet/internal/auth	0.011s
-ok  	logdiet/internal/compact	0.012s
+FAIL	github.com/yoon-sang-won/LogDiet/internal/auth	0.011s
+ok  	github.com/yoon-sang-won/LogDiet/internal/compact	0.012s

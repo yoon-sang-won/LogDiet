@@ -171,14 +171,14 @@ func TestFixTextReplacesAbsolutePathsWithPlaceholders(t *testing.T) {
 		"linux /home/alice/project/file.go",
 		"mac /Users/bob/project/file.go",
 		"windows C:\\Users\\carol\\project\\file.go",
-		"repo /repo/logdiet/internal/cli.go",
+		"repo /repo/LogDiet/internal/cli.go",
 		"```",
 		"fenced /home/alice/project/file.go",
 		"fenced C:\\Users\\carol\\project\\file.go",
 		"```",
 		"",
 	}, "\n")
-	got := fixText(input, "", "/repo/logdiet")
+	got := fixText(input, "", "/repo/LogDiet")
 	for _, want := range []string{
 		"linux <home>/project/file.go",
 		"mac <home>/project/file.go",

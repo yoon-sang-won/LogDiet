@@ -38,7 +38,7 @@ func TestSpecificCompactorsFindHandles(t *testing.T) {
 		{
 			name: "go test",
 			cmd:  []string{"go", "test", "./..."},
-			out:  "--- FAIL: TestLogin (0.00s)\n    auth_test.go:17: missing token\nFAIL\tlogdiet/internal/auth\t0.011s\n",
+			out:  "--- FAIL: TestLogin (0.00s)\n    auth_test.go:17: missing token\nFAIL\tgithub.com/yoon-sang-won/LogDiet/internal/auth\t0.011s\n",
 			want: "F1",
 		},
 		{
