@@ -12,13 +12,4 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-      - run: go test ./cmd/logdiet
-      - run: go test ./internal/bench
-      - run: go test ./internal/cli
-      - run: go test ./internal/compact
-      - run: go test ./internal/instructions
-      - run: go test ./internal/run
-      - run: go test ./internal/shim
-      - run: go test ./internal/store
-      - run: go test ./internal/textutil
-      - run: go test ./internal/version
+      - run: go test ./...
