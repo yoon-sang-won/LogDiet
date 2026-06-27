@@ -2,17 +2,33 @@
 
 LogDiet is not magically built into Codex. It works through repository instructions and command hooks where supported.
 
-## Rules fallback
+## Status
 
-Use `AGENTS.md` or `logdiet-instructions.md` to tell Codex:
+- rules fallback: supported through `AGENTS.md` or `logdiet-instructions.md`
+- native adapter: hook rewrite template
+- transparent rewrite: partial, requires supported and trusted Codex hooks
+- trust required: yes, review hooks in `/hooks` before enabling them
 
-- use LogDiet for noisy commands such as tests, builds, git diffs, and search;
-- prefer `logdiet wrap -- <command>` when automatic hook rewrite is unavailable;
-- read compact evidence first;
-- expand exact output with `logdiet show`, `logdiet grep`, and `logdiet raw`;
-- avoid asking the user to paste full terminal logs.
+## Recommended setup
 
-## Hook rewrite template
+```sh
+logdiet init --agent codex --mode all
+logdiet doctor
+```
+
+If Codex asks for hook review, open `/hooks` and trust the generated LogDiet hook only after comparing it with your local files.
+
+## Default fallback behavior
+
+Without trusted hooks, Codex should still use the rules fallback and run:
+
+```sh
+logdiet wrap -- <command>
+```
+
+This is the reliable path for noisy tests, builds, git diffs, and search.
+
+## How it works
 
 `hook-rewrite-template.sh` shows how a Codex command hook could call:
 
@@ -22,14 +38,16 @@ logdiet hook rewrite --command "$COMMAND"
 
 The hook rewrite template asks LogDiet for a decision. It does not execute the command itself.
 
-Codex may require hook review/trust. If Codex asks for review, open `/hooks` and trust the generated LogDiet hook only after comparing it with your local files.
-
-If hooks are not enabled or trusted, Codex should still use the rules fallback and run:
+## Verification
 
 ```sh
-logdiet wrap -- <command>
+./scripts/verify-codex-integration.sh
 ```
 
-full raw logs stay local under `.logdiet/runs/`. Compact evidence can be expanded with `show`, `grep`, and `raw`.
+This verifies LogDiet-side files and rewrite decisions. Runtime hook trust must be verified manually inside Codex with `/hooks`.
 
-Automatic command rewriting is available where Codex command hooks are supported and trusted. Other environments use rules/instructions fallback or manual `logdiet wrap`.
+## Limitations
+
+- Built-in Codex file/search/editor tools may bypass shell hooks.
+- Automatic rewrite applies only to command execution paths Codex exposes to trusted hooks.
+- full raw logs stay local under `.logdiet/runs/`; compact evidence can be expanded with `show`, `grep`, and `raw`.

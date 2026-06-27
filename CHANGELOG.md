@@ -9,6 +9,9 @@
 - Native hooks are documented as optional advanced mode, not the default requirement.
 - README and README.ko.md now surface the agent self-install flow earlier.
 - `AI_INSTALL.md`, `bootstrap`, and `agent-instructions` now more clearly tell agents to continue with `logdiet wrap` without requiring hooks.
+- Integration READMEs now distinguish native adapters, rules fallback, and manual CLI usage.
+- `doctor` now reports native adapter status more clearly.
+- Documentation now frames hooks as best-effort native automation with wrapper fallback everywhere.
 
 ### Added
 
@@ -23,6 +26,11 @@
 - `scripts/verify-agent-self-install.sh` for hookless self-install verification.
 - `docs/first-agent-prompt.md` with a copy-paste prompt for coding agents.
 - Agent-native documentation.
+- Native adapter architecture documentation.
+- `logdiet init` entrypoint for agent integration setup/status.
+- Adapter contract documentation.
+- Adapter fixture verification script.
+- Agent support matrix.
 - Setup modes for rules, shims, and native templates.
 - Doctor output for agent integration status.
 

@@ -36,6 +36,18 @@ LogDiet therefore treats hooks as advanced mode.
 
 The default path relies on rules/instructions that teach the agent to call `logdiet wrap` explicitly.
 
+## Native adapters and fallback
+
+LogDiet prefers native hook/plugin adapters where supported and trusted.
+
+If native rewrite is unavailable, the agent should continue with the default wrapper flow:
+
+```sh
+logdiet wrap -- COMMAND
+```
+
+This fallback is not a failure. It is the universal path.
+
 ## What agents should do
 
 Agents should use LogDiet for:

@@ -19,6 +19,25 @@ logdiet agent-instructions --agent auto
 
 Then continue the current task using LogDiet for noisy commands.
 
+## Choose the best available integration
+
+Prefer the best local integration the current agent can safely use:
+
+```sh
+logdiet init --agent auto
+logdiet doctor
+```
+
+If native hooks/plugins are available and trusted, they may rewrite supported shell commands through LogDiet automatically.
+
+If native rewrite is unavailable, untrusted, or unclear, do not block on hooks. Continue with:
+
+```sh
+logdiet wrap -- COMMAND
+```
+
+This fallback is the universal path.
+
 ## For the rest of this session
 
 Use:

@@ -131,8 +131,14 @@ func TestCLICommonCommands(t *testing.T) {
 		"logdiet hook rewrite --command \"go test ./...\"",
 		"bootstrap              install LogDiet rules/shims for an AI agent",
 		"agent-instructions     print session instructions for an AI agent",
+		"init                    install or inspect agent integrations",
 		"logdiet bootstrap --agent auto",
 		"logdiet agent-instructions --agent auto",
+		"logdiet init --agent auto",
+		"logdiet init --agent claude --mode native",
+		"logdiet init --agent cursor --mode all",
+		"logdiet init --show",
+		"logdiet init --uninstall --agent codex",
 	} {
 		if !strings.Contains(help, want) {
 			t.Fatalf("help missing %q:\n%s", want, help)
@@ -212,6 +218,117 @@ func TestCLICommonCommands(t *testing.T) {
 
 	out.Reset()
 	errb.Reset()
+}
+
+func TestInitShowAndInstallModes(t *testing.T) {
+	t.Run("show", func(t *testing.T) {
+		dir := t.TempDir()
+		oldwd, _ := os.Getwd()
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+		defer os.Chdir(oldwd)
+
+		var out, errb bytes.Buffer
+		if code := Run([]string{"init", "--show"}, &out, &errb); code != 0 {
+			t.Fatalf("init show exit=%d out=%s err=%s", code, out.String(), errb.String())
+		}
+		for _, want := range []string{
+			"LogDiet init status",
+			"auto-detected agent: generic",
+			"rules fallback: available",
+			"explicit wrapper: available",
+			"Native where possible. Fallback everywhere. Raw logs always local.",
+			"Codex:",
+			"Generic:",
+		} {
+			if !strings.Contains(out.String(), want) {
+				t.Fatalf("init --show output missing %q:\n%s", want, out.String())
+			}
+		}
+		if _, err := os.Stat(filepath.Join(dir, ".logdiet")); !os.IsNotExist(err) {
+			t.Fatalf("init --show should not modify files, err=%v", err)
+		}
+	})
+
+	for _, tc := range []struct {
+		name      string
+		args      []string
+		wantFile  string
+		wantOut   []string
+		absentDir string
+	}{
+		{
+			name:     "generic default rules",
+			args:     []string{"init", "--agent", "generic"},
+			wantFile: filepath.Join(".logdiet", "LOGDIET_RULES.md"),
+			wantOut:  []string{"LogDiet init: generic", "mode: rules", "rules: .logdiet/LOGDIET_RULES.md installed", "native: skipped"},
+		},
+		{
+			name:     "codex rules",
+			args:     []string{"init", "--agent", "codex", "--mode", "rules"},
+			wantFile: "AGENTS.md",
+			wantOut:  []string{"LogDiet init: codex", "mode: rules", "rules: AGENTS.md installed", "native: skipped"},
+		},
+		{
+			name:     "claude native",
+			args:     []string{"init", "--agent", "claude", "--mode", "native"},
+			wantFile: "CLAUDE.md",
+			wantOut:  []string{"LogDiet init: claude", "mode: native", "rules: CLAUDE.md installed", "native: template installed .logdiet/integrations/claude-code"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			oldwd, _ := os.Getwd()
+			if err := os.Chdir(dir); err != nil {
+				t.Fatal(err)
+			}
+			defer os.Chdir(oldwd)
+
+			var out, errb bytes.Buffer
+			if code := Run(tc.args, &out, &errb); code != 0 {
+				t.Fatalf("init exit=%d out=%s err=%s", code, out.String(), errb.String())
+			}
+			if _, err := os.Stat(filepath.Join(dir, tc.wantFile)); err != nil {
+				t.Fatalf("init missing %s: %v\n%s", tc.wantFile, err, out.String())
+			}
+			for _, want := range tc.wantOut {
+				if !strings.Contains(out.String(), want) {
+					t.Fatalf("init output missing %q:\n%s", want, out.String())
+				}
+			}
+		})
+	}
+}
+
+func TestInitUninstallRemovesManagedRulesOnly(t *testing.T) {
+	dir := t.TempDir()
+	oldwd, _ := os.Getwd()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(oldwd)
+
+	var out, errb bytes.Buffer
+	if code := Run([]string{"init", "--agent", "codex", "--mode", "rules"}, &out, &errb); code != 0 {
+		t.Fatalf("init install exit=%d out=%s err=%s", code, out.String(), errb.String())
+	}
+	out.Reset()
+	errb.Reset()
+	if code := Run([]string{"init", "--uninstall", "--agent", "codex"}, &out, &errb); code != 0 {
+		t.Fatalf("init uninstall exit=%d out=%s err=%s", code, out.String(), errb.String())
+	}
+	if !strings.Contains(out.String(), "removed rules: AGENTS.md") ||
+		!strings.Contains(out.String(), "raw logs preserved") {
+		t.Fatalf("init uninstall output missing conservative removal details:\n%s", out.String())
+	}
+	agents, err := os.ReadFile(filepath.Join(dir, "AGENTS.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(agents), "BEGIN LOGDIET MANAGED RESPONSE CONTRACT") {
+		t.Fatalf("init uninstall left managed block:\n%s", string(agents))
+	}
 }
 
 func TestBootstrapGenericCodexAndAuto(t *testing.T) {
@@ -674,13 +791,20 @@ func TestDoctorShowsAgentNativeStatus(t *testing.T) {
 		t.Fatalf("doctor exit=%d out=%s err=%s", code, out.String(), errb.String())
 	}
 	for _, want := range []string{
-		"agent integrations:",
-		"Codex rules: AGENTS.md installed",
-		"Codex native: template installed",
-		"Claude Code skill: template missing",
-		"Cursor rules: .cursor/rules/logdiet.mdc missing",
-		"Gemini rules: GEMINI.md missing",
-		"Antigravity rules: .agents/rules/logdiet.md missing",
+		"Agent integrations",
+		"auto-detected agent: codex",
+		"rules fallback: available",
+		"explicit wrapper: available",
+		"Codex:",
+		"  rules: installed",
+		"  native adapter: installed",
+		"  transparent rewrite: partial",
+		"  trust required: yes",
+		"Claude Code:",
+		"  native adapter: template",
+		"Generic:",
+		"  native adapter: not applicable",
+		"  transparent rewrite: no",
 	} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("doctor output missing %q:\n%s", want, out.String())

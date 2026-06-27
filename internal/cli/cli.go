@@ -53,6 +53,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return bootstrapCommand(root, args[1:], stdout, stderr)
 	case "agent-instructions":
 		return agentInstructionsCommand(root, args[1:], stdout, stderr)
+	case "init":
+		return initCommand(root, args[1:], stdout, stderr)
 	case "setup":
 		return setupCommand(root, args[1:], stdout, stderr)
 	case "doctor":
@@ -84,9 +86,15 @@ common commands:
   logdiet install
   bootstrap              install LogDiet rules/shims for an AI agent
   agent-instructions     print session instructions for an AI agent
+  init                    install or inspect agent integrations
   logdiet bootstrap --agent auto
   logdiet bootstrap --agent codex
   logdiet agent-instructions --agent auto
+  logdiet init --agent auto
+  logdiet init --agent claude --mode native
+  logdiet init --agent cursor --mode all
+  logdiet init --show
+  logdiet init --uninstall --agent codex
   logdiet setup codex --mode all
   logdiet doctor
   logdiet env
@@ -629,6 +637,8 @@ func doctorCommand(root string, args []string, stdout, stderr io.Writer) int {
 		}
 		fmt.Fprintf(stdout, "  %s %s: %s\n", entry.label, ruleDisplayPath(entry.target), status)
 	}
+	fmt.Fprintln(stdout)
+	fmt.Fprint(stdout, agentIntegrationStatusText(root))
 	fmt.Fprintln(stdout)
 	fmt.Fprintln(stdout, "agent integrations:")
 	fmt.Fprintf(stdout, "  Codex rules: AGENTS.md %s\n", ruleInstallStatus(root, "codex"))

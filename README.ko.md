@@ -141,6 +141,21 @@ flowchart LR
 
 자동 명령 rewrite는 에이전트가 command hook을 지원하는 경우에만 동작합니다. 그 외 환경에서는 rules/instructions 또는 `logdiet wrap` 수동 모드를 사용합니다.
 
+## 에이전트 지원 매트릭스
+
+| 에이전트 | 권장 통합 | 자동 명령 rewrite | fallback | 상태 |
+| --- | --- | --- | --- | --- |
+| Codex | rules + hook template | partial / trust required | `logdiet wrap -- COMMAND` | template |
+| Claude Code | native hook template + rules | template / not verified | `logdiet wrap -- COMMAND` | template |
+| Cursor | native hook template + rules | template / not verified | `logdiet wrap -- COMMAND` | template |
+| Gemini CLI | native hook template + rules | template / not verified | `logdiet wrap -- COMMAND` | template |
+| Antigravity | rules fallback | unknown | `logdiet wrap -- COMMAND` | rules |
+| Generic | rules fallback | no | `logdiet wrap -- COMMAND` | supported |
+
+Transparent rewrite는 hook이 노출하는 shell/terminal command 경로에만 적용됩니다. 에이전트의 내장 file/search/editor 도구는 LogDiet를 우회할 수 있습니다.
+
+Native where possible. Fallback everywhere. Raw logs always local.
+
 ## Quickstart: 에이전트에 설치
 
 ### Codex
@@ -222,13 +237,21 @@ logdiet hook rewrite --command "go test ./..."
 - Generic terminal agents: `integrations/generic/`
 
 v0.2 구조는 [docs/agent-native.md](docs/agent-native.md)를 참고하세요.
+native adapter 구조는 [docs/native-adapters.md](docs/native-adapters.md)를 참고하세요.
 self-install 흐름은 [docs/agent-self-install.md](docs/agent-self-install.md)를 참고하세요.
 에이전트에게 줄 복사/붙여넣기 프롬프트는 [docs/first-agent-prompt.md](docs/first-agent-prompt.md)를 참고하세요.
+adapter contract는 [integrations/ADAPTER_CONTRACT.md](integrations/ADAPTER_CONTRACT.md)를 참고하세요.
 
 ## 주요 명령
 
 ```sh
 logdiet install
+logdiet bootstrap --agent auto
+logdiet agent-instructions --agent auto
+logdiet init --agent auto
+logdiet init --show
+logdiet init --agent claude --mode native
+logdiet init --uninstall --agent codex
 logdiet setup codex --mode rules
 logdiet setup codex --mode shim
 logdiet setup codex --mode native
@@ -280,6 +303,7 @@ go test ./...
 go install ./cmd/logdiet
 ./scripts/verify-release.sh
 ./scripts/verify-agent-self-install.sh
+./scripts/verify-adapter-fixtures.sh
 ```
 
 v0.2 검증은 [docs/v0.2-verification.md](docs/v0.2-verification.md)를 참고하세요.

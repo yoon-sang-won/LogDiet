@@ -1,0 +1,15 @@
+go test ./...
+pytest -q
+npm test
+pnpm test
+yarn test
+cargo test
+git diff
+git status
+rg "TODO"
+vim file.go
+less README.md
+ssh example.com
+python
+node
+logdiet wrap -- go test ./...

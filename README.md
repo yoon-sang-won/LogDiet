@@ -141,6 +141,21 @@ flowchart LR
 
 Automatic command rewriting is available where the agent supports command hooks. Other agents use rules/instructions fallback or manual `logdiet wrap`.
 
+## Agent support matrix
+
+| Agent | Best integration | Automatic command rewrite | Fallback | Status |
+| --- | --- | --- | --- | --- |
+| Codex | rules + hook template | partial / trust required | `logdiet wrap -- COMMAND` | template |
+| Claude Code | native hook template + rules | template / not verified | `logdiet wrap -- COMMAND` | template |
+| Cursor | native hook template + rules | template / not verified | `logdiet wrap -- COMMAND` | template |
+| Gemini CLI | native hook template + rules | template / not verified | `logdiet wrap -- COMMAND` | template |
+| Antigravity | rules fallback | unknown | `logdiet wrap -- COMMAND` | rules |
+| Generic | rules fallback | no | `logdiet wrap -- COMMAND` | supported |
+
+Transparent rewrite applies only to shell/terminal command paths exposed to hooks. Built-in agent file/search/editor tools may bypass LogDiet.
+
+Native where possible. Fallback everywhere. Raw logs always local.
+
 ## Quickstart: install for your agent
 
 ### Codex
@@ -224,8 +239,10 @@ Integration packages live under `integrations/`:
 - Generic terminal agents: `integrations/generic/`
 
 See [docs/agent-native.md](docs/agent-native.md) for the v0.2 architecture.
+See [docs/native-adapters.md](docs/native-adapters.md) for the native adapter architecture.
 See [docs/agent-self-install.md](docs/agent-self-install.md) for the self-install flow.
 See [docs/first-agent-prompt.md](docs/first-agent-prompt.md) for a copy-paste prompt to give your coding agent.
+See [integrations/ADAPTER_CONTRACT.md](integrations/ADAPTER_CONTRACT.md) for the adapter contract.
 
 ## Core commands
 
@@ -233,6 +250,10 @@ See [docs/first-agent-prompt.md](docs/first-agent-prompt.md) for a copy-paste pr
 logdiet install
 logdiet bootstrap --agent auto
 logdiet agent-instructions --agent auto
+logdiet init --agent auto
+logdiet init --show
+logdiet init --agent claude --mode native
+logdiet init --uninstall --agent codex
 logdiet setup codex --mode rules
 logdiet setup codex --mode shim
 logdiet setup codex --mode native
@@ -284,6 +305,7 @@ go test ./...
 go install ./cmd/logdiet
 ./scripts/verify-release.sh
 ./scripts/verify-agent-self-install.sh
+./scripts/verify-adapter-fixtures.sh
 ```
 
 For v0.2 checks, see [docs/v0.2-verification.md](docs/v0.2-verification.md).

@@ -81,6 +81,7 @@ func nativeTemplates(target string) (string, []nativeTemplate, error) {
 		return "antigravity", []nativeTemplate{
 			{"README.md", nativeReadme("Antigravity")},
 			{"logdiet.md", commonAgentInstructions("Antigravity")},
+			{"native-template.md", antigravityNativeTemplate()},
 		}, nil
 	case "generic":
 		return "generic", []nativeTemplate{
@@ -99,6 +100,8 @@ func nativeReadme(agent string) string {
 These files are local templates for installing LogDiet as an agent-native token diet layer.
 
 Review the rules and hook template before enabling them in your agent. Template installation does not enable hooks automatically.
+
+Native where possible. Fallback everywhere. Raw logs always local.
 `, agent)
 }
 
@@ -146,8 +149,33 @@ set -eu
 # This script must not execute the command itself.
 
 : "${COMMAND:?COMMAND is required}"
+if ! command -v logdiet >/dev/null 2>&1; then
+	printf '%%s\n' "logdiet not found; install LogDiet or use logdiet wrap -- COMMAND manually" >&2
+	exit 127
+fi
 logdiet hook rewrite --command "$COMMAND"
 `, agent)
+}
+
+func antigravityNativeTemplate() string {
+	return `# Antigravity Native Adapter Notes
+
+LogDiet does not currently claim a verified Antigravity native hook adapter.
+
+Use rules fallback first:
+
+` + "```sh" + `
+logdiet wrap -- COMMAND
+` + "```" + `
+
+If Antigravity exposes a trusted shell command hook in your environment, adapt a thin local hook that delegates to:
+
+` + "```sh" + `
+logdiet hook rewrite --command "$COMMAND"
+` + "```" + `
+
+Do not enable automatic rewrite until you have reviewed the hook and verified it inside Antigravity.
+`
 }
 
 func oneOf(s string, vals ...string) bool {
