@@ -7,37 +7,31 @@ import (
 	"testing"
 )
 
-func TestREADMEIncludesAgentAndVerificationSections(t *testing.T) {
+func TestREADMEIncludesLandingPageSections(t *testing.T) {
 	readme := readProjectFile(t, "README.md")
 
 	for _, want := range []string{
 		"English",
 		"한국어",
 		"Put your coding agent on a token diet.",
-		"LogDiet keeps full command logs locally",
-		"## The problem",
-		"## The LogDiet loop",
+		"Keep the logs. Cut the noise.",
+		"Stop feeding log walls to your coding agent",
+		"## Before / After",
+		"## How LogDiet works",
 		"mermaid",
-		"## Before and after",
+		"## Try It In 60 Seconds",
+		"## For AI agents",
 		"## Works with",
 		"## Core commands",
-		"## TL;DR",
-		"## For AI agents",
-		"## Try It In 60 Seconds",
-		"## Who this is for",
-		"## Agent Quickstarts",
+		"## Agent quickstarts",
 		"## What LogDiet is not",
 		"## FAQ",
-		"## Trust but verify",
+		"No network. No telemetry. No model/API calls.",
 		"go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest",
-		"logdiet setup codex",
-		"logdiet setup claude",
-		"logdiet setup cursor",
-		"logdiet setup antigravity",
 		"logdiet show latest:F1 --around 40",
 		"logdiet grep latest \"pattern\"",
 		".agents/rules/logdiet.md",
-		"No network. No telemetry. No model/API calls.",
+		"README.ko.md",
 	} {
 		if !strings.Contains(readme, want) {
 			t.Fatalf("README.md missing %q", want)
@@ -45,27 +39,29 @@ func TestREADMEIncludesAgentAndVerificationSections(t *testing.T) {
 	}
 }
 
-func TestKoreanREADMEIncludesCoreSections(t *testing.T) {
+func TestKoreanREADMEIncludesLandingPageSections(t *testing.T) {
 	readme := readProjectFile(t, "README.ko.md")
 
 	for _, want := range []string{
 		"English",
 		"한국어",
 		"코딩 에이전트에게 토큰 다이어트를 시키세요.",
-		"## 한눈에 보기",
-		"## 왜 필요할까요",
+		"전체 로그는 보관하고, 노이즈는 줄입니다.",
+		"AI 에이전트에게 로그 벽을 먹이지 마세요",
+		"## Before / After",
 		"## LogDiet의 동작 방식",
 		"mermaid",
-		"## Before / After",
 		"## 60초 안에 써보기",
 		"## AI 에이전트를 위한 사용법",
 		"## 함께 쓰기 좋은 환경",
 		"## 주요 명령어",
+		"## LogDiet이 아닌 것",
 		"## FAQ",
 		"No network. No telemetry. No model/API calls.",
 		"go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest",
 		"logdiet show latest:F1 --around 40",
 		".agents/rules/logdiet.md",
+		"README.md",
 	} {
 		if !strings.Contains(readme, want) {
 			t.Fatalf("README.ko.md missing %q", want)

@@ -10,7 +10,11 @@
 </p>
 
 <p align="center">
-  Keep full logs locally. Feed agents compact evidence.
+  Keep the logs. Cut the noise.
+</p>
+
+<p align="center">
+  LogDiet keeps full command logs locally and feeds AI coding agents compact, expandable evidence instead of noisy terminal walls.
 </p>
 
 <p align="center">
@@ -19,14 +23,11 @@
   <img alt="Go" src="https://img.shields.io/badge/Go-1.22+-00ADD8">
   <img alt="No Network" src="https://img.shields.io/badge/network-none-brightgreen">
   <img alt="No Telemetry" src="https://img.shields.io/badge/telemetry-none-brightgreen">
-  <img alt="Local First" src="https://img.shields.io/badge/local--first-yes-blue">
 </p>
-
-LogDiet keeps full command logs locally and feeds AI coding agents compact, expandable evidence instead of noisy terminal walls.
 
 No network. No telemetry. No model/API calls.
 
-## The problem
+## Stop feeding log walls to your coding agent
 
 AI coding agents are good at fixing code, but they often waste context on terminal output:
 
@@ -37,41 +38,28 @@ AI coding agents are good at fixing code, but they often waste context on termin
 - grep results;
 - warnings that hide the actual failure.
 
-Most of that output still matters, but the agent does not need all of it at once.
+Most of that output still matters. The agent just does not need all of it at once.
 
-## The LogDiet loop
+LogDiet stores the full output locally and gives the agent a smaller, structured view:
 
-1. Run commands normally or through `logdiet wrap`.
-2. LogDiet stores the full raw output under `.logdiet/runs/`.
-3. The agent sees compact evidence with handles like `latest:F1`.
-4. The agent expands only what it needs with `show`, `raw`, or `grep`.
+- what command ran;
+- whether it passed or failed;
+- the most relevant failure evidence;
+- handles to expand exact raw lines only when needed.
 
-```mermaid
-flowchart LR
-    A[Agent runs command] --> B[LogDiet captures stdout/stderr]
-    B --> C[Raw logs stored locally<br/>.logdiet/runs/]
-    B --> D[Compact evidence shown to agent]
-    D --> E[show latest:F1]
-    D --> F[grep latest pattern]
-    D --> G[raw latest]
-```
+## Before / After
 
-```sh
-logdiet show latest:F1 --around 40
-logdiet raw latest
-logdiet grep latest "panic"
-```
-
-## Before and after
-
-### Before: agent sees the whole wall
+### Before: the agent sees the whole log wall
 
 ```text
 pytest -q
 ... thousands of lines of traceback, warnings, retries, and progress output ...
+... repeated stack frames ...
+... unrelated warnings ...
+... the actual failure is buried somewhere above ...
 ```
 
-### After: agent sees compact evidence
+### After: the agent sees compact evidence
 
 ```text
 logdiet run 20260627T120000Z-12345-a1b2 exit=1 raw=.logdiet/runs/20260627T120000Z-12345-a1b2
@@ -85,7 +73,23 @@ grep: logdiet grep latest "pattern"
 stats: raw=18420B compact=610B approx_saved=96.7%
 ```
 
+Full raw logs are still stored locally under `.logdiet/runs/`.
+
 This example is synthetic. `approx_saved` is a byte-based reduction estimate, not a provider billing measurement.
+
+## How LogDiet works
+
+```mermaid
+flowchart LR
+    A[Agent runs command] --> B[LogDiet captures stdout/stderr]
+    B --> C[Raw logs stored locally<br/>.logdiet/runs/]
+    B --> D[Compact evidence shown to agent]
+    D --> E[show latest:F1]
+    D --> F[grep latest pattern]
+    D --> G[raw latest]
+```
+
+The loop is simple: keep raw logs on disk, show compact evidence in the terminal, and expand exact raw output only when needed.
 
 ## Try It In 60 Seconds
 
@@ -109,19 +113,20 @@ logdiet doctor
 logdiet wrap -- go test ./...
 ```
 
-`@latest` works best after a release tag exists. Before a release tag, use the current branch or a commit version if needed.
+`@latest` works best after a release tag exists.
 
-## TL;DR
+## For AI agents
 
-LogDiet is local command I/O portion control for AI coding agents.
+When LogDiet is installed and `.logdiet/bin` is first in `PATH`:
 
-It:
+- run normal commands such as `go test ./...`, `pytest`, `npm test`, `git diff`, or `rg`;
+- read the compact evidence LogDiet prints;
+- use `logdiet show latest:F1 --around 40` when a handle needs expansion;
+- use `logdiet grep latest "pattern"` to search exact raw output;
+- use `logdiet raw latest` only when compact evidence is insufficient;
+- do not ask the user to paste full logs unless `show`, `grep`, and `raw` are insufficient.
 
-- captures full command output locally;
-- shows the agent compact evidence;
-- lets the agent expand exact raw lines with `show`, `raw`, and `grep`;
-- works with project-local PATH shims;
-- supports Codex, Claude Code, Cursor, Antigravity, Gemini, and generic terminal agents.
+A good agent response should cite the compact evidence first, then expand raw output only when needed.
 
 ## Works with
 
@@ -147,34 +152,7 @@ It:
 | `logdiet raw latest` | Print full raw output |
 | `logdiet setup codex` | Install Codex-facing rules |
 
-## For AI agents
-
-When LogDiet is installed and `.logdiet/bin` is first in `PATH`:
-
-- run normal commands such as `go test ./...`, `pytest`, `npm test`, `git diff`, or `rg`;
-- read the compact evidence LogDiet prints;
-- use `logdiet show latest:F1 --around 40` when a handle needs expansion;
-- use `logdiet grep latest "pattern"` to search exact raw output;
-- use `logdiet raw latest` only when compact evidence is insufficient;
-- do not ask the user to paste full logs unless `show`, `grep`, and `raw` are insufficient.
-
-A good agent response should cite the compact evidence first, then ask for raw expansion only when needed.
-
-## Who this is for
-
-LogDiet is useful if you use:
-
-- Codex;
-- Claude Code;
-- Cursor;
-- Antigravity;
-- Gemini CLI;
-- Aider, opencode, or other terminal-based coding agents;
-- any workflow where test, build, search, or diff output gets pasted into an AI context window.
-
-It is especially useful when commands produce long output but only a few lines explain the failure.
-
-## Agent Quickstarts
+## Agent quickstarts
 
 ### Codex
 
@@ -229,7 +207,6 @@ go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest
 logdiet setup gemini
 eval "$(logdiet env)"
 logdiet doctor
-gemini
 ```
 
 Creates or updates `GEMINI.md`.
@@ -240,24 +217,12 @@ Creates or updates `GEMINI.md`.
 go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest
 logdiet install
 eval "$(logdiet env)"
-logdiet rules --print
 logdiet doctor
 ```
 
 Use this when your agent reads terminal output but does not have a dedicated rules file.
 
-## Manual Wrapper
-
-```sh
-logdiet wrap -- go test ./...
-logdiet raw latest
-logdiet grep latest "panic"
-logdiet show latest:F1 --around 40
-```
-
-Use the manual wrapper when you do not want PATH shims or when you only need to capture one command.
-
-## Raw Expansion
+## Raw expansion
 
 ```sh
 logdiet show latest:F1 --around 40
@@ -265,11 +230,11 @@ logdiet raw latest --combined --tail 80
 logdiet grep latest "AssertionError" --around 3
 ```
 
-Compact output may shorten noise, but LogDiet does not discard raw logs. Raw files can contain secrets, tokens, private paths, proprietary code, or other sensitive data. Do not commit `.logdiet/runs`.
+Raw expansion is exact. Use it when compact evidence is not enough.
 
-## PATH Shims
+## PATH shims
 
-`logdiet install` creates local command shims in `.logdiet/bin`. Prepend that directory to `PATH` inside the terminal or agent session.
+`logdiet install` creates local command shims in `.logdiet/bin`. Put that directory first in `PATH` for agent sessions where commands should be captured automatically.
 
 Controls:
 
@@ -280,40 +245,7 @@ Controls:
 
 No shell profiles are modified in v0.1.
 
-## Instruction Lint
-
-```sh
-logdiet lint-instructions
-logdiet lint-instructions --json
-logdiet lint-instructions --fix
-```
-
-The linter scans common agent instruction files for cache-breaking noise: generated timestamps, absolute local paths, duplicate lines, duplicate managed sections, large code fences, long examples, volatile command output, and rules that require step-by-step narration.
-
-## Optional Response Contract
-
-```sh
-logdiet rules --print
-logdiet rules --install codex
-logdiet rules --install claude
-logdiet rules --install cursor
-logdiet rules --install antigravity
-logdiet rules --install gemini
-```
-
-Installed rules are wrapped in managed markers and are safe to re-run. Existing files are backed up under `.logdiet/backup/` before mutation.
-
-## Doctor
-
-```sh
-logdiet doctor
-```
-
-`doctor` checks the current session: binary path, current directory, `.logdiet` state, shim directory, `PATH`, installed shims, real command resolution, LogDiet environment variables, latest run, and agent rule files.
-
-Run it in the same terminal or agent session where commands will execute.
-
-## Fixture Benchmarks
+## Benchmarks
 
 ```sh
 logdiet bench-fixtures
@@ -330,37 +262,17 @@ git_diff.txt                   924           630                231             
 
 Approximate token estimates use `ceil(bytes / 4)` and are not provider billing measurements.
 
-## Trust but verify
+## Privacy and local-first design
 
-To verify a release from a fresh clone:
+LogDiet is local-first by design:
 
-```sh
-git clone https://github.com/yoon-sang-won/LogDiet
-cd LogDiet
-./scripts/verify-release.sh
-```
+- no network calls;
+- no telemetry;
+- no model/API calls;
+- full raw logs stay on your machine;
+- generated run logs live under `.logdiet/runs/`.
 
-For manual verification, see [docs/verification.md](docs/verification.md).
-
-More release resources:
-
-- [README.ko.md](README.ko.md)
-- [CHANGELOG.md](CHANGELOG.md)
-- [docs/demo.md](docs/demo.md)
-- [docs/verification.md](docs/verification.md)
-- [docs/release-checklist.md](docs/release-checklist.md)
-
-## Privacy
-
-No network. No telemetry. No model/API calls.
-
-LogDiet stores raw logs locally under `.logdiet/runs/`. Compact output may still include snippets from raw logs, so treat terminal output as potentially sensitive.
-
-## What LogDiet is
-
-LogDiet is a local command-output capture and evidence layer for AI coding-agent sessions. The core primitive is lossless local command-output capture with compact expandable evidence handles.
-
-Every wrapped command stores `stdout.txt`, `stderr.txt`, `combined.txt`, `meta.json`, and `index.json`. The terminal receives a short summary with evidence handles such as `F1`, `E1`, `D1`, or `G1`.
+Raw logs may contain secrets, tokens, private paths, or proprietary output. Do not commit `.logdiet/runs/`, and review logs before sharing them.
 
 ## What LogDiet is not
 
@@ -398,28 +310,19 @@ LogDiet reduces the amount of command output you feed into an AI coding-agent co
 
 No. You can use `logdiet wrap -- <command>` manually. PATH shims are for agent sessions where commands should be captured automatically.
 
-## Design Boundaries
+## Verification
 
-See [docs/design-boundaries.md](docs/design-boundaries.md). LogDiet is independently implemented Apache-2.0 code and uses synthetic fixtures.
-
-## Limitations
-
-- `combined.txt` appends stdout then stderr in v0.1, so cross-stream ordering is best-effort.
-- Compaction is deterministic pattern extraction, not semantic understanding.
-- Parsers focus on common failure shapes and may miss unusual tool output.
-- Windows command lookup supports `.exe`, `.cmd`, `.bat`, and `.com`.
-- No daemon, TUI, editor extension, MCP server, model proxy, or cloud dashboard is included.
-
-## Uninstall
+To verify a release from a fresh clone:
 
 ```sh
-logdiet uninstall
-logdiet uninstall --rules
+git clone https://github.com/yoon-sang-won/LogDiet
+cd LogDiet
+./scripts/verify-release.sh
 ```
 
-Uninstall removes managed shims and optionally managed response-rule sections. It does not delete `.logdiet/runs` by default.
+For manual verification, see [docs/verification.md](docs/verification.md).
 
-## Development
+## Development / release resources
 
 ```sh
 go install ./cmd/logdiet
@@ -427,19 +330,14 @@ gofmt -w .
 go test ./...
 ```
 
-LogDiet is standard-library-only Go. Do not add network calls, telemetry, or third-party dependencies for v0.1.
+More resources:
 
-## Release
-
-Run the release checklist in [docs/release-checklist.md](docs/release-checklist.md).
-
-```sh
-./scripts/verify-release.sh
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-`go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest` works best after a release tag exists.
+- [README.ko.md](README.ko.md)
+- [CHANGELOG.md](CHANGELOG.md)
+- [docs/demo.md](docs/demo.md)
+- [docs/release-notes-v0.1.0.md](docs/release-notes-v0.1.0.md)
+- [docs/verification.md](docs/verification.md)
+- [docs/release-checklist.md](docs/release-checklist.md)
 
 ## License
 

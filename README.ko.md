@@ -10,7 +10,11 @@
 </p>
 
 <p align="center">
-  전체 로그는 로컬에 보관하고, 에이전트에게는 필요한 증거만 짧게 보여줍니다.
+  전체 로그는 보관하고, 노이즈는 줄입니다.
+</p>
+
+<p align="center">
+  LogDiet은 전체 명령어 로그를 로컬에 저장하고, AI 코딩 에이전트에게는 작고 펼쳐볼 수 있는 증거만 보여주는 로컬 CLI 도구입니다.
 </p>
 
 <p align="center">
@@ -19,23 +23,11 @@
   <img alt="Go" src="https://img.shields.io/badge/Go-1.22+-00ADD8">
   <img alt="No Network" src="https://img.shields.io/badge/network-none-brightgreen">
   <img alt="No Telemetry" src="https://img.shields.io/badge/telemetry-none-brightgreen">
-  <img alt="Local First" src="https://img.shields.io/badge/local--first-yes-blue">
 </p>
-
-LogDiet은 전체 명령어 로그를 로컬에 보관하고, AI 코딩 에이전트에게는 작고 펼쳐볼 수 있는 증거만 보여주는 로컬 CLI 도구입니다.
 
 No network. No telemetry. No model/API calls.
 
-## 한눈에 보기
-
-LogDiet은 AI 코딩 에이전트를 위한 로컬 command I/O portion control 도구입니다.
-
-- 전체 stdout/stderr는 `.logdiet/runs/` 아래에 보관합니다.
-- 에이전트에게는 실패 요약과 `latest:F1` 같은 증거 핸들을 보여줍니다.
-- 필요할 때만 `show`, `grep`, `raw`로 원문 로그를 펼쳐봅니다.
-- Codex, Claude Code, Cursor, Antigravity, Gemini, 일반 터미널 기반 에이전트와 함께 쓸 수 있습니다.
-
-## 왜 필요할까요
+## AI 에이전트에게 로그 벽을 먹이지 마세요
 
 AI 코딩 에이전트는 코드를 고치는 데 능숙하지만, 터미널 출력 때문에 컨텍스트를 쉽게 낭비합니다.
 
@@ -46,30 +38,14 @@ AI 코딩 에이전트는 코드를 고치는 데 능숙하지만, 터미널 출
 - grep 결과
 - 실제 실패를 가리는 warning
 
-이 출력은 버리면 안 됩니다. 다만 에이전트가 한 번에 전부 볼 필요는 없습니다.
+이 출력은 여전히 중요합니다. 다만 에이전트가 한 번에 전부 볼 필요는 없습니다.
 
-## LogDiet의 동작 방식
+LogDiet은 전체 출력은 로컬에 보관하고, 에이전트에게는 더 작고 구조화된 화면을 제공합니다.
 
-1. 평소처럼 명령어를 실행하거나 `logdiet wrap`을 사용합니다.
-2. LogDiet은 전체 raw output을 `.logdiet/runs/`에 저장합니다.
-3. 에이전트는 `latest:F1` 같은 짧은 증거 핸들을 봅니다.
-4. 필요한 부분만 `show`, `grep`, `raw`로 펼쳐봅니다.
-
-```mermaid
-flowchart LR
-    A[Agent runs command] --> B[LogDiet captures stdout/stderr]
-    B --> C[Raw logs stored locally<br/>.logdiet/runs/]
-    B --> D[Compact evidence shown to agent]
-    D --> E[show latest:F1]
-    D --> F[grep latest pattern]
-    D --> G[raw latest]
-```
-
-```sh
-logdiet show latest:F1 --around 40
-logdiet raw latest
-logdiet grep latest "panic"
-```
+- 어떤 명령이 실행됐는지
+- 통과했는지 실패했는지
+- 가장 관련 있는 실패 증거
+- 필요할 때 정확한 원문 줄을 펼쳐볼 수 있는 핸들
 
 ## Before / After
 
@@ -78,6 +54,9 @@ logdiet grep latest "panic"
 ```text
 pytest -q
 ... 수천 줄의 traceback, warning, retry, progress output ...
+... 반복되는 stack frame ...
+... 관련 없는 warning ...
+... 실제 실패 원인은 어딘가에 묻혀 있음 ...
 ```
 
 ### After: 에이전트가 짧은 증거만 봅니다
@@ -94,7 +73,23 @@ grep: logdiet grep latest "pattern"
 stats: raw=18420B compact=610B approx_saved=96.7%
 ```
 
+전체 원문 로그는 `.logdiet/runs/` 아래 로컬에 남아 있습니다.
+
 이 예시는 합성 예시입니다. `approx_saved`는 바이트 기준 감소 추정치이며 실제 provider billing 측정값이 아닙니다.
+
+## LogDiet의 동작 방식
+
+```mermaid
+flowchart LR
+    A[Agent runs command] --> B[LogDiet captures stdout/stderr]
+    B --> C[Raw logs stored locally<br/>.logdiet/runs/]
+    B --> D[Compact evidence shown to agent]
+    D --> E[show latest:F1]
+    D --> F[grep latest pattern]
+    D --> G[raw latest]
+```
+
+핵심은 단순합니다. 원문 로그는 디스크에 보관하고, 터미널에는 짧은 증거를 보여주며, 필요할 때만 정확한 원문을 펼쳐봅니다.
 
 ## 60초 안에 써보기
 
@@ -125,27 +120,13 @@ logdiet wrap -- go test ./...
 LogDiet이 설치되어 있고 `.logdiet/bin`이 `PATH`의 앞에 있을 때:
 
 - `go test ./...`, `pytest`, `npm test`, `git diff`, `rg` 같은 명령을 평소처럼 실행하세요.
-- LogDiet이 출력한 compact evidence를 먼저 읽으세요.
+- LogDiet이 출력한 짧은 증거를 먼저 읽으세요.
 - 특정 핸들이 필요하면 `logdiet show latest:F1 --around 40`을 사용하세요.
 - 원문 로그를 검색하려면 `logdiet grep latest "pattern"`을 사용하세요.
-- compact evidence가 부족할 때만 `logdiet raw latest`를 사용하세요.
+- 짧은 증거가 부족할 때만 `logdiet raw latest`를 사용하세요.
 - `show`, `grep`, `raw`로도 부족할 때만 사용자에게 전체 로그를 요청하세요.
 
-좋은 에이전트 응답은 compact evidence를 먼저 인용하고, 필요한 경우에만 원문 확장을 요청합니다.
-
-## 어떤 사용자에게 맞나요
-
-LogDiet은 다음 환경에서 유용합니다.
-
-- Codex
-- Claude Code
-- Cursor
-- Antigravity
-- Gemini CLI
-- Aider, opencode 같은 터미널 기반 코딩 에이전트
-- 테스트, 빌드, 검색 출력이 AI 컨텍스트 창을 많이 차지하는 워크플로
-
-명령어 출력은 길지만 실제 실패를 설명하는 줄은 몇 줄뿐일 때 특히 유용합니다.
+좋은 에이전트 응답은 짧은 증거를 먼저 인용하고, 필요한 경우에만 원문을 펼쳐봅니다.
 
 ## 함께 쓰기 좋은 환경
 
@@ -226,7 +207,6 @@ go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest
 logdiet setup gemini
 eval "$(logdiet env)"
 logdiet doctor
-gemini
 ```
 
 `GEMINI.md`를 만들거나 업데이트합니다.
@@ -237,7 +217,6 @@ gemini
 go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest
 logdiet install
 eval "$(logdiet env)"
-logdiet rules --print
 logdiet doctor
 ```
 
@@ -251,15 +230,15 @@ logdiet raw latest --combined --tail 80
 logdiet grep latest "AssertionError" --around 3
 ```
 
-LogDiet은 raw log를 버리지 않습니다. `.logdiet/runs/`에는 비밀값, 토큰, private path, proprietary code가 들어갈 수 있으므로 커밋하지 마세요.
+원문 확장은 정확합니다. 짧은 증거만으로 부족할 때 사용하세요.
 
 ## PATH Shim
 
 `logdiet install`은 `.logdiet/bin`에 로컬 command shim을 만듭니다. 에이전트 세션에서 이 디렉터리가 `PATH`의 앞에 오도록 설정하면 일반 명령도 자동으로 캡처됩니다.
 
 - `LOGDIET_BYPASS=1`: 실제 명령을 직접 실행합니다.
-- `LOGDIET_MODE=auto`: 유용한 명령만 compact output으로 바꿉니다.
-- `LOGDIET_MODE=force`: shimmed command 전체를 compact output으로 바꿉니다.
+- `LOGDIET_MODE=auto`: 유용한 명령만 짧은 증거로 바꿉니다.
+- `LOGDIET_MODE=force`: shimmed command 전체를 짧은 증거로 바꿉니다.
 - `LOGDIET_MODE=off`: compaction을 끕니다.
 
 v0.1에서는 shell profile을 자동으로 수정하지 않습니다.
@@ -281,9 +260,15 @@ git_diff.txt                   924           630                231             
 
 ## 개인정보와 로컬 우선 설계
 
-No network. No telemetry. No model/API calls.
+LogDiet은 local-first로 동작합니다.
 
-LogDiet은 raw log를 로컬 `.logdiet/runs/` 아래에 저장합니다. compact output에도 raw log 일부가 포함될 수 있으므로 터미널 출력은 민감할 수 있다고 보고 다루세요.
+- network call 없음
+- telemetry 없음
+- model/API call 없음
+- 전체 raw log는 내 컴퓨터에 남음
+- 생성된 실행 로그는 `.logdiet/runs/` 아래에 저장됨
+
+raw log에는 secret, token, private path, proprietary output이 들어갈 수 있습니다. `.logdiet/runs/`를 커밋하지 말고 공유 전 로그를 확인하세요.
 
 ## LogDiet이 아닌 것
 
