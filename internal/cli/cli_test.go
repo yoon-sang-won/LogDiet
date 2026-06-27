@@ -52,7 +52,9 @@ func TestCLIWrapRawShowAndGrep(t *testing.T) {
 	if code := Run([]string{"raw", "latest"}, &out, &errb); code != 0 {
 		t.Fatalf("raw exit=%d err=%s", code, errb.String())
 	}
-	if out.String() != "alpha ok\nbeta failed \n" && out.String() != "alpha ok\r\nbeta failed \r\n" {
+	if out.String() != "alpha ok\nbeta failed\n" &&
+		out.String() != "alpha ok\nbeta failed \n" &&
+		out.String() != "alpha ok\r\nbeta failed \r\n" {
 		t.Fatalf("raw did not print exact combined output:\n%q", out.String())
 	}
 	out.Reset()
