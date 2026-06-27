@@ -13,5 +13,11 @@ jobs:
         with:
           go-version: '1.22'
       - run: |
+          set +e
           set -o pipefail
-          go test ./... | tee gotest.txt
+          go test ./... 2>&1 | tee gotest.txt
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            tail -n 80 gotest.txt | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g; s/^/::error file=.github\/workflows\/test.yml::/'
+          fi
+          exit "$status"
