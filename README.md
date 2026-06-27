@@ -1,11 +1,30 @@
 # LogDiet
 
-[![test](https://github.com/yoon-sang-won/LogDiet/actions/workflows/test.yml/badge.svg)](https://github.com/yoon-sang-won/LogDiet/actions/workflows/test.yml)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+<p align="center">
+  <a href="./README.md">English</a> ·
+  <a href="./README.ko.md">한국어</a>
+</p>
 
-Put your coding agent on a token diet.
+<p align="center">
+  <strong>Put your coding agent on a token diet.</strong>
+</p>
+
+<p align="center">
+  Keep full logs locally. Feed agents compact evidence.
+</p>
+
+<p align="center">
+  <a href="https://github.com/yoon-sang-won/LogDiet/actions/workflows/test.yml"><img alt="test" src="https://github.com/yoon-sang-won/LogDiet/actions/workflows/test.yml/badge.svg"></a>
+  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
+  <img alt="Go" src="https://img.shields.io/badge/Go-1.22+-00ADD8">
+  <img alt="No Network" src="https://img.shields.io/badge/network-none-brightgreen">
+  <img alt="No Telemetry" src="https://img.shields.io/badge/telemetry-none-brightgreen">
+  <img alt="Local First" src="https://img.shields.io/badge/local--first-yes-blue">
+</p>
 
 LogDiet keeps full command logs locally and feeds AI coding agents compact, expandable evidence instead of noisy terminal walls.
+
+No network. No telemetry. No model/API calls.
 
 ## The problem
 
@@ -27,26 +46,32 @@ Most of that output still matters, but the agent does not need all of it at once
 3. The agent sees compact evidence with handles like `latest:F1`.
 4. The agent expands only what it needs with `show`, `raw`, or `grep`.
 
+```mermaid
+flowchart LR
+    A[Agent runs command] --> B[LogDiet captures stdout/stderr]
+    B --> C[Raw logs stored locally<br/>.logdiet/runs/]
+    B --> D[Compact evidence shown to agent]
+    D --> E[show latest:F1]
+    D --> F[grep latest pattern]
+    D --> G[raw latest]
+```
+
 ```sh
 logdiet show latest:F1 --around 40
 logdiet raw latest
 logdiet grep latest "panic"
 ```
 
-Keep full logs locally. Feed agents compact evidence.
-
-No network. No telemetry. No model/API calls.
-
 ## Before and after
 
-Without LogDiet, an agent may receive a full wall of logs:
+### Before: agent sees the whole wall
 
 ```text
 pytest -q
 ... thousands of lines of traceback, warnings, retries, and progress output ...
 ```
 
-With LogDiet, the agent gets compact evidence:
+### After: agent sees compact evidence
 
 ```text
 logdiet run 20260627T120000Z-12345-a1b2 exit=1 raw=.logdiet/runs/20260627T120000Z-12345-a1b2
@@ -64,6 +89,8 @@ This example is synthetic. `approx_saved` is a byte-based reduction estimate, no
 
 ## Try It In 60 Seconds
 
+### macOS / Linux
+
 ```sh
 go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest
 logdiet install
@@ -72,7 +99,7 @@ logdiet doctor
 logdiet wrap -- go test ./...
 ```
 
-PowerShell:
+### PowerShell
 
 ```powershell
 go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest
@@ -95,6 +122,30 @@ It:
 - lets the agent expand exact raw lines with `show`, `raw`, and `grep`;
 - works with project-local PATH shims;
 - supports Codex, Claude Code, Cursor, Antigravity, Gemini, and generic terminal agents.
+
+## Works with
+
+| Agent / workflow | Setup |
+|---|---|
+| Codex | `logdiet setup codex` |
+| Claude Code | `logdiet setup claude` |
+| Cursor | `logdiet setup cursor` |
+| Antigravity | `logdiet setup antigravity` |
+| Gemini | `logdiet setup gemini` |
+| Generic terminal agents | `logdiet install` |
+
+## Core commands
+
+| Command | Use it when |
+|---|---|
+| `logdiet install` | Set up local state and PATH shims |
+| `logdiet env` | Print shell activation commands |
+| `logdiet doctor` | Check whether the current session uses LogDiet |
+| `logdiet wrap -- <cmd>` | Capture one command manually |
+| `logdiet show latest:F1 --around 40` | Expand one evidence handle |
+| `logdiet grep latest "pattern"` | Search exact raw output |
+| `logdiet raw latest` | Print full raw output |
+| `logdiet setup codex` | Install Codex-facing rules |
 
 ## For AI agents
 
@@ -195,8 +246,6 @@ logdiet doctor
 
 Use this when your agent reads terminal output but does not have a dedicated rules file.
 
-`setup` installs local shims and a managed rule file for the selected agent. It does not edit shell profiles.
-
 ## Manual Wrapper
 
 ```sh
@@ -295,9 +344,10 @@ For manual verification, see [docs/verification.md](docs/verification.md).
 
 More release resources:
 
+- [README.ko.md](README.ko.md)
 - [CHANGELOG.md](CHANGELOG.md)
 - [docs/demo.md](docs/demo.md)
-- [docs/release-notes-v0.1.0.md](docs/release-notes-v0.1.0.md)
+- [docs/verification.md](docs/verification.md)
 - [docs/release-checklist.md](docs/release-checklist.md)
 
 ## Privacy
@@ -305,8 +355,6 @@ More release resources:
 No network. No telemetry. No model/API calls.
 
 LogDiet stores raw logs locally under `.logdiet/runs/`. Compact output may still include snippets from raw logs, so treat terminal output as potentially sensitive.
-
-Provider prompt caching can reduce cost or latency for repeated prefixes. LogDiet complements that by keeping large local command outputs out of the agent context in the first place.
 
 ## What LogDiet is
 
@@ -392,18 +440,6 @@ git push origin v0.1.0
 ```
 
 `go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest` works best after a release tag exists.
-
-Suggested GitHub repository description:
-
-```text
-Put your coding agent on a token diet. Local logs, compact evidence.
-```
-
-Suggested topics:
-
-```text
-ai coding-agent developer-tools cli go token-optimization logs terminal codex claude-code cursor antigravity
-```
 
 ## License
 

@@ -38,12 +38,23 @@ cd "$tmpdir/LogDiet"
 ./scripts/verify-release.sh
 ```
 
+## Multilingual docs
+
+Before release:
+
+- check `README.md`;
+- check `README.ko.md`;
+- make sure both point to each other;
+- keep commands and paths copy-pasteable in both languages.
+
 ## GitHub
 
 - Actions are green.
 - `.github/workflows/test.yml` runs direct `go test ./...`.
 - Fresh clone verification passes.
 - README install command is correct.
+- `README.md` and `README.ko.md` both have working language switcher links.
+- `README.ko.md` is updated when `README.md` changes.
 - No `.logdiet/runs` or `.logdiet/backup` files are committed.
 - Run a real dogfood test in at least one Go, Python, or Node repo.
 - Run at least one agent-specific setup flow.
