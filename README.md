@@ -7,28 +7,60 @@ Put your coding agent on a token diet.
 
 LogDiet keeps full command logs locally and feeds AI coding agents compact, expandable evidence instead of noisy terminal walls.
 
-## TL;DR
+## The problem
 
-LogDiet is for AI coding-agent sessions where terminal output eats too much context.
+AI coding agents are good at fixing code, but they often waste context on terminal output:
 
-It:
+- long test logs;
+- repeated stack traces;
+- noisy build output;
+- huge diffs;
+- grep results;
+- warnings that hide the actual failure.
 
-- captures full command output locally;
-- shows the agent compact evidence;
-- lets the agent expand exact raw lines with `show`, `raw`, and `grep`;
-- works with project-local PATH shims;
-- supports Codex, Claude Code, Cursor, Antigravity, and generic terminal agents.
+Most of that output still matters, but the agent does not need all of it at once.
 
-## For AI agents
+## The LogDiet loop
 
-When LogDiet is installed and `.logdiet/bin` is first in PATH:
+1. Run commands normally or through `logdiet wrap`.
+2. LogDiet stores the full raw output under `.logdiet/runs/`.
+3. The agent sees compact evidence with handles like `latest:F1`.
+4. The agent expands only what it needs with `show`, `raw`, or `grep`.
 
-- run normal commands such as `go test ./...`, `pytest`, `npm test`, `git diff`, or `rg`;
-- read the compact evidence LogDiet prints;
-- use `logdiet show latest:F1 --around 40` when a handle needs expansion;
-- use `logdiet raw latest` only when the compact output is insufficient;
-- use `logdiet grep latest "pattern"` to search exact raw output;
-- do not ask the user to paste full logs unless `raw`, `show`, and `grep` are insufficient.
+```sh
+logdiet show latest:F1 --around 40
+logdiet raw latest
+logdiet grep latest "panic"
+```
+
+Keep full logs locally. Feed agents compact evidence.
+
+No network. No telemetry. No model/API calls.
+
+## Before and after
+
+Without LogDiet, an agent may receive a full wall of logs:
+
+```text
+pytest -q
+... thousands of lines of traceback, warnings, retries, and progress output ...
+```
+
+With LogDiet, the agent gets compact evidence:
+
+```text
+logdiet run 20260627T120000Z-12345-a1b2 exit=1 raw=.logdiet/runs/20260627T120000Z-12345-a1b2
+cmd: pytest -q
+summary: 2 failed, 31 passed
+F1 tests/test_api.py:42 AssertionError: expected 200, got 500
+F2 tests/test_auth.py:17 ValueError: missing token
+show: logdiet show latest:F1 --around 40
+raw:  logdiet raw latest
+grep: logdiet grep latest "pattern"
+stats: raw=18420B compact=610B approx_saved=96.7%
+```
+
+This example is synthetic. `approx_saved` is a byte-based reduction estimate, not a provider billing measurement.
 
 ## Try It In 60 Seconds
 
@@ -50,45 +82,46 @@ logdiet doctor
 logdiet wrap -- go test ./...
 ```
 
-`@latest` works best after a release tag exists.
+`@latest` works best after a release tag exists. Before a release tag, use the current branch or a commit version if needed.
 
-## Why LogDiet Exists
+## TL;DR
 
-AI coding agents often spend context on terminal walls: test traces, progress output, repeated warnings, and long build logs. LogDiet keeps the complete command output on disk and shows the agent a compact report with expansion commands.
+LogDiet is local command I/O portion control for AI coding agents.
 
-The product focus is local command I/O portion control:
+It:
 
-- keep full logs locally;
-- feed agents compact evidence;
-- expand exact raw lines with `show`, `raw`, and `grep`;
-- preserve child command exit codes.
+- captures full command output locally;
+- shows the agent compact evidence;
+- lets the agent expand exact raw lines with `show`, `raw`, and `grep`;
+- works with project-local PATH shims;
+- supports Codex, Claude Code, Cursor, Antigravity, Gemini, and generic terminal agents.
 
-## What It Shows The Agent
+## For AI agents
 
-Before:
+When LogDiet is installed and `.logdiet/bin` is first in `PATH`:
 
-```text
-pytest -q
-... thousands of lines of traceback, warnings, progress output ...
-```
+- run normal commands such as `go test ./...`, `pytest`, `npm test`, `git diff`, or `rg`;
+- read the compact evidence LogDiet prints;
+- use `logdiet show latest:F1 --around 40` when a handle needs expansion;
+- use `logdiet grep latest "pattern"` to search exact raw output;
+- use `logdiet raw latest` only when compact evidence is insufficient;
+- do not ask the user to paste full logs unless `show`, `grep`, and `raw` are insufficient.
 
-After LogDiet:
+A good agent response should cite the compact evidence first, then ask for raw expansion only when needed.
 
-```text
-logdiet run 20260627T120000Z-12345-a1b2 exit=1 raw=.logdiet/runs/20260627T120000Z-12345-a1b2
-cmd: pytest -q
-summary: 2 failed, 31 passed
-F1 tests/test_api.py:42 AssertionError: expected 200, got 500
-F2 tests/test_auth.py:17 ValueError: missing token
-show: logdiet show latest:F1 --around 40
-raw:  logdiet raw latest
-grep: logdiet grep latest "pattern"
-stats: raw=18420B compact=610B approx_saved=96.7%
-```
+## Who this is for
 
-This example is synthetic.
+LogDiet is useful if you use:
 
-The raw output is still available locally under `.logdiet/runs/<run-id>/`.
+- Codex;
+- Claude Code;
+- Cursor;
+- Antigravity;
+- Gemini CLI;
+- Aider, opencode, or other terminal-based coding agents;
+- any workflow where test, build, search, or diff output gets pasted into an AI context window.
+
+It is especially useful when commands produce long output but only a few lines explain the failure.
 
 ## Agent Quickstarts
 
@@ -102,6 +135,8 @@ logdiet doctor
 codex
 ```
 
+Creates or updates `AGENTS.md`.
+
 ### Claude Code
 
 ```sh
@@ -112,6 +147,8 @@ logdiet doctor
 claude
 ```
 
+Creates or updates `CLAUDE.md`.
+
 ### Cursor
 
 ```sh
@@ -121,7 +158,7 @@ eval "$(logdiet env)"
 logdiet doctor
 ```
 
-Cursor rules path: `.cursor/rules/logdiet.mdc`.
+Creates or updates `.cursor/rules/logdiet.mdc`.
 
 ### Antigravity
 
@@ -132,9 +169,21 @@ eval "$(logdiet env)"
 logdiet doctor
 ```
 
-Antigravity rules path: `.agents/rules/logdiet.md`.
+Creates or updates `.agents/rules/logdiet.md`.
 
-### Generic Terminal Agents
+### Gemini
+
+```sh
+go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest
+logdiet setup gemini
+eval "$(logdiet env)"
+logdiet doctor
+gemini
+```
+
+Creates or updates `GEMINI.md`.
+
+### Generic terminal agents
 
 ```sh
 go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest
@@ -144,26 +193,20 @@ logdiet rules --print
 logdiet doctor
 ```
 
+Use this when your agent reads terminal output but does not have a dedicated rules file.
+
 `setup` installs local shims and a managed rule file for the selected agent. It does not edit shell profiles.
 
-## Trust but verify
-
-To verify a release from a fresh clone:
+## Manual Wrapper
 
 ```sh
-git clone https://github.com/yoon-sang-won/LogDiet
-cd LogDiet
-./scripts/verify-release.sh
+logdiet wrap -- go test ./...
+logdiet raw latest
+logdiet grep latest "panic"
+logdiet show latest:F1 --around 40
 ```
 
-For manual verification, see [docs/verification.md](docs/verification.md).
-
-More release resources:
-
-- [CHANGELOG.md](CHANGELOG.md)
-- [docs/demo.md](docs/demo.md)
-- [docs/release-notes-v0.1.0.md](docs/release-notes-v0.1.0.md)
-- [docs/release-checklist.md](docs/release-checklist.md)
+Use the manual wrapper when you do not want PATH shims or when you only need to capture one command.
 
 ## Raw Expansion
 
@@ -238,45 +281,74 @@ git_diff.txt                   924           630                231             
 
 Approximate token estimates use `ceil(bytes / 4)` and are not provider billing measurements.
 
+## Trust but verify
+
+To verify a release from a fresh clone:
+
+```sh
+git clone https://github.com/yoon-sang-won/LogDiet
+cd LogDiet
+./scripts/verify-release.sh
+```
+
+For manual verification, see [docs/verification.md](docs/verification.md).
+
+More release resources:
+
+- [CHANGELOG.md](CHANGELOG.md)
+- [docs/demo.md](docs/demo.md)
+- [docs/release-notes-v0.1.0.md](docs/release-notes-v0.1.0.md)
+- [docs/release-checklist.md](docs/release-checklist.md)
+
 ## Privacy
 
-LogDiet makes no network calls, sends no telemetry, and stores raw logs locally. It does not call a model or API. Compact output may still include snippets from raw logs, so treat terminal output as potentially sensitive.
+No network. No telemetry. No model/API calls.
+
+LogDiet stores raw logs locally under `.logdiet/runs/`. Compact output may still include snippets from raw logs, so treat terminal output as potentially sensitive.
 
 Provider prompt caching can reduce cost or latency for repeated prefixes. LogDiet complements that by keeping large local command outputs out of the agent context in the first place.
 
-## What LogDiet Is
+## What LogDiet is
 
-LogDiet is a local command I/O reduction tool for AI coding-agent sessions. The core primitive is lossless local command-output capture with compact expandable evidence handles.
-
-## What LogDiet Is Not
-
-- Not a general token-saving bundle.
-- Not a model proxy.
-- Not a prompt compressor.
-- Not an AI summarizer.
-- Not a cloud service.
-- Not a telemetry product.
-- Not a replacement for provider prompt caching.
-- Not a tool that discards logs.
-
-## Core Idea: Compact Evidence, Full Raw Logs
+LogDiet is a local command-output capture and evidence layer for AI coding-agent sessions. The core primitive is lossless local command-output capture with compact expandable evidence handles.
 
 Every wrapped command stores `stdout.txt`, `stderr.txt`, `combined.txt`, `meta.json`, and `index.json`. The terminal receives a short summary with evidence handles such as `F1`, `E1`, `D1`, or `G1`.
 
-Use `logdiet show`, `logdiet raw`, or `logdiet grep` to expand exactly what you need.
+## What LogDiet is not
 
-## Manual Wrapper
+LogDiet is not:
 
-```sh
-logdiet wrap -- go test ./...
-logdiet raw latest
-logdiet grep latest "panic"
-logdiet show latest:F1 --around 40
-```
+- a model proxy;
+- a prompt compressor;
+- a cloud service;
+- a telemetry collector;
+- a replacement for provider prompt caching;
+- a tool that discards logs;
+- a benchmark claiming exact provider-token savings.
 
-## Privacy And Local-First Design
+It is a local command-output capture and evidence layer.
 
-LogDiet makes no network calls, sends no telemetry, and stores raw logs locally. This section is retained for users scanning for local-first guarantees.
+## FAQ
+
+### Does LogDiet send my logs anywhere?
+
+No. LogDiet does not make network calls, does not send telemetry, and does not call models or APIs.
+
+### Are raw logs deleted?
+
+No. Full raw command output is stored locally under `.logdiet/runs/`.
+
+### Can raw logs contain secrets?
+
+Yes. Raw logs can contain secrets, tokens, paths, and private data. Do not commit `.logdiet/runs/` and review logs before sharing them.
+
+### Does LogDiet reduce my provider bill?
+
+LogDiet reduces the amount of command output you feed into an AI coding-agent conversation. It does not measure or guarantee provider billing savings.
+
+### Do I need PATH shims?
+
+No. You can use `logdiet wrap -- <command>` manually. PATH shims are for agent sessions where commands should be captured automatically.
 
 ## Design Boundaries
 
