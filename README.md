@@ -98,6 +98,20 @@ logdiet doctor
 codex
 ```
 
+### Codex verification
+
+LogDiet can generate Codex rules and hook templates:
+
+```sh
+logdiet setup codex --mode all
+logdiet doctor
+./scripts/verify-codex-integration.sh
+```
+
+If Codex asks you to review hooks, open `/hooks` in Codex and trust the generated LogDiet hook only after reviewing it.
+
+Automatic command rewriting requires supported and trusted Codex hooks. Without hooks, Codex still uses the `AGENTS.md` rules fallback and can run `logdiet wrap -- <command>`.
+
 ### Claude Code
 
 ```sh

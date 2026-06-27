@@ -1,12 +1,18 @@
 # LogDiet for Codex
 
-This directory contains original LogDiet templates for using LogDiet with Codex.
+LogDiet is not magically built into Codex. It works through repository instructions and command hooks where supported.
 
-## Layer A: rules fallback
+## Rules fallback
 
-Use `AGENTS.md` or `logdiet-instructions.md` to teach Codex to prefer compact LogDiet evidence and avoid pasted log walls.
+Use `AGENTS.md` or `logdiet-instructions.md` to tell Codex:
 
-## Layer B: hook rewrite template
+- use LogDiet for noisy commands such as tests, builds, git diffs, and search;
+- prefer `logdiet wrap -- <command>` when automatic hook rewrite is unavailable;
+- read compact evidence first;
+- expand exact output with `logdiet show`, `logdiet grep`, and `logdiet raw`;
+- avoid asking the user to paste full terminal logs.
+
+## Hook rewrite template
 
 `hook-rewrite-template.sh` shows how a Codex command hook could call:
 
@@ -14,6 +20,16 @@ Use `AGENTS.md` or `logdiet-instructions.md` to teach Codex to prefer compact Lo
 logdiet hook rewrite --command "$COMMAND"
 ```
 
-This is a hook rewrite template. It is not automatically installed or enabled by this repository.
+The hook rewrite template asks LogDiet for a decision. It does not execute the command itself.
 
-Automatic command rewriting is available where the agent supports command hooks. Other agents use rules/instructions fallback or manual `logdiet wrap`.
+Codex may require hook review/trust. If Codex asks for review, open `/hooks` and trust the generated LogDiet hook only after comparing it with your local files.
+
+If hooks are not enabled or trusted, Codex should still use the rules fallback and run:
+
+```sh
+logdiet wrap -- <command>
+```
+
+full raw logs stay local under `.logdiet/runs/`. Compact evidence can be expanded with `show`, `grep`, and `raw`.
+
+Automatic command rewriting is available where Codex command hooks are supported and trusted. Other environments use rules/instructions fallback or manual `logdiet wrap`.

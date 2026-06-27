@@ -22,14 +22,28 @@ func TestAgentNativeDocsAndIntegrationFiles(t *testing.T) {
 			"logdiet setup codex --mode all",
 			"Doctor should report rules, shims, and native template status",
 		},
+		"docs/codex-integration-verification.md": {
+			"# Codex Integration Verification",
+			"## What is verified automatically",
+			"## What requires manual verification",
+			"/hooks",
+			"Automatic command rewriting is available only where Codex command hooks are supported and trusted.",
+		},
 		"integrations/codex/README.md": {
 			"LogDiet for Codex",
+			"not magically built into Codex",
 			"rules fallback",
 			"hook rewrite template",
+			"/hooks",
+			"full raw logs stay local",
 		},
 		"integrations/codex/AGENTS.md": {
-			"# LogDiet instructions for Codex",
+			"# LogDiet for Codex",
+			"use LogDiet for noisy commands",
 			"prefer `logdiet wrap -- <command>`",
+			"logdiet show latest:F1 --around 40",
+			"logdiet grep latest \"pattern\"",
+			"logdiet raw latest",
 			"do not ask the user to paste full terminal logs",
 		},
 		"integrations/codex/logdiet-instructions.md": {
@@ -95,6 +109,15 @@ func TestAgentNativeDocsAndIntegrationFiles(t *testing.T) {
 			"logdiet hook rewrite --command \"$COMMAND\"",
 			"must not execute the command",
 		},
+		"scripts/verify-codex-integration.sh": {
+			"#!/bin/sh",
+			"Codex native hook template verified. Runtime trust must be verified manually in Codex with /hooks.",
+			"logdiet setup codex --mode rules",
+			"logdiet setup codex --mode all",
+			"logdiet hook rewrite --command \"go test ./...\"",
+			"\"wrap\":true",
+			"\"wrap\":false",
+		},
 	}
 
 	for name, wants := range files {
@@ -119,6 +142,9 @@ func TestReadmesAndChangelogIncludeV02Positioning(t *testing.T) {
 		"logdiet setup codex --mode all",
 		"logdiet hook rewrite --command \"go test ./...\"",
 		"docs/agent-native.md",
+		"### Codex verification",
+		"./scripts/verify-codex-integration.sh",
+		"/hooks",
 	} {
 		if !strings.Contains(readme, want) {
 			t.Fatalf("README.md missing %q", want)
@@ -132,6 +158,9 @@ func TestReadmesAndChangelogIncludeV02Positioning(t *testing.T) {
 		"command hook",
 		"logdiet setup codex --mode all",
 		"logdiet hook rewrite --command \"go test ./...\"",
+		"Codex 검증",
+		"./scripts/verify-codex-integration.sh",
+		"/hooks",
 	} {
 		if !strings.Contains(korean, want) {
 			t.Fatalf("README.ko.md missing %q", want)

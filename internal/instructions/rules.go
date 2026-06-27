@@ -13,6 +13,13 @@ const (
 )
 
 const RulesText = `LogDiet response contract:
+- Use LogDiet for noisy commands such as tests, builds, git diffs, and search.
+- Prefer ` + "`logdiet wrap -- <command>`" + ` when automatic hook rewrite is unavailable.
+- Read compact evidence first.
+- Expand one handle with ` + "`logdiet show latest:F1 --around 40`" + `.
+- Search raw output with ` + "`logdiet grep latest \"pattern\"`" + `.
+- Print full raw output with ` + "`logdiet raw latest`" + ` only when compact evidence is insufficient.
+- do not ask the user to paste full terminal logs unless LogDiet expansion commands are insufficient.
 - No prefaces, apologies, filler, or progress narration.
 - Do not say "I'll inspect", "Now I'll test", or "Summary:" unless it adds new information.
 - On success, report only:

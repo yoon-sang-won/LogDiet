@@ -397,6 +397,72 @@ func TestSetupModes(t *testing.T) {
 	})
 }
 
+func TestCodexSetupOutputsContainOperationalInstructions(t *testing.T) {
+	dir := t.TempDir()
+	oldwd, _ := os.Getwd()
+	oldPath := os.Getenv("PATH")
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(oldwd)
+	defer os.Setenv("PATH", oldPath)
+
+	var out, errb bytes.Buffer
+	if code := Run([]string{"setup", "codex", "--mode", "rules"}, &out, &errb); code != 0 {
+		t.Fatalf("setup codex rules exit=%d out=%s err=%s", code, out.String(), errb.String())
+	}
+	agents, err := os.ReadFile(filepath.Join(dir, "AGENTS.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"logdiet wrap",
+		"logdiet show latest:F1 --around 40",
+		"logdiet grep latest",
+		"logdiet raw latest",
+		"do not ask the user to paste full terminal logs",
+	} {
+		if !strings.Contains(string(agents), want) {
+			t.Fatalf("AGENTS.md missing %q:\n%s", want, string(agents))
+		}
+	}
+
+	out.Reset()
+	errb.Reset()
+	if code := Run([]string{"setup", "codex", "--mode", "all"}, &out, &errb); code != 0 {
+		t.Fatalf("setup codex all exit=%d out=%s err=%s", code, out.String(), errb.String())
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".logdiet", "integrations", "codex", "hook-rewrite-template.sh")); err != nil {
+		t.Fatalf("codex native hook template missing: %v", err)
+	}
+	agents, err = os.ReadFile(filepath.Join(dir, "AGENTS.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(agents), "BEGIN LOGDIET MANAGED RESPONSE CONTRACT") != 1 {
+		t.Fatalf("setup all should preserve one managed rules block:\n%s", string(agents))
+	}
+
+	bin := filepath.Join(dir, ".logdiet", "bin")
+	if err := os.Setenv("PATH", bin+string(os.PathListSeparator)+oldPath); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	errb.Reset()
+	if code := Run([]string{"doctor"}, &out, &errb); code != 0 {
+		t.Fatalf("doctor exit=%d out=%s err=%s", code, out.String(), errb.String())
+	}
+	for _, want := range []string{
+		"Codex AGENTS.md: installed",
+		"Codex rules: AGENTS.md installed",
+		"Codex native: template installed",
+	} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("doctor output missing %q:\n%s", want, out.String())
+		}
+	}
+}
+
 func TestDoctorBeforeAndAfterInstall(t *testing.T) {
 	dir := t.TempDir()
 	oldwd, _ := os.Getwd()

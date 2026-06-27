@@ -98,6 +98,20 @@ logdiet doctor
 codex
 ```
 
+### Codex 검증
+
+LogDiet은 Codex용 rules와 hook template을 생성할 수 있습니다.
+
+```sh
+logdiet setup codex --mode all
+logdiet doctor
+./scripts/verify-codex-integration.sh
+```
+
+Codex가 hook 검토를 요구하면 Codex 안에서 `/hooks`를 열고, 생성된 LogDiet hook을 직접 확인한 뒤 trust하세요.
+
+자동 command rewrite는 Codex hook이 지원되고 trust된 경우에만 동작합니다. hook을 사용할 수 없는 환경에서는 `AGENTS.md` rules fallback을 통해 `logdiet wrap -- <command>`를 사용합니다.
+
 ### Claude Code
 
 ```sh
