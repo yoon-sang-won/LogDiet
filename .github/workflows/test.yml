@@ -12,26 +12,4 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-      - run: |
-          set +e
-          go test -json ./... > gotest.json
-          status=$?
-          cat gotest.json
-          if [ "$status" -ne 0 ]; then
-            python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          for line in Path("gotest.json").read_text().splitlines():
-              try:
-                  event = json.loads(line)
-              except json.JSONDecodeError:
-                  continue
-              if event.get("Action") == "fail":
-                  pkg = event.get("Package", "")
-                  test = event.get("Test", "")
-                  name = f"{pkg} {test}".strip()
-                  print(f"::error file=.github/workflows/test.yml,line=19::{name} failed")
-          PY
-          fi
-          exit "$status"
+      - run: go test ./...
