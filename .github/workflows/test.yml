@@ -12,4 +12,12 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-      - run: go test ./...
+      - run: |
+          set +e
+          go test ./... > gotest.txt 2>&1
+          status=$?
+          cat gotest.txt
+          if [ "$status" -ne 0 ]; then
+            tail -n 80 gotest.txt | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g; s/^/::error file=.github\/workflows\/test.yml::/'
+          fi
+          exit "$status"
