@@ -12,6 +12,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-      - run: |
+      - shell: bash
+        run: |
           set -o pipefail
           go test ./... | tee gotest.txt
