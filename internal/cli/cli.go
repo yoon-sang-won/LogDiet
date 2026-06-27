@@ -63,15 +63,15 @@ func Run(args []string, stdout, stderr io.Writer) int {
 }
 
 func helpText() string {
-	return `LogDiet keeps full command logs locally and feeds compact, expandable evidence.
+	return `LogDiet keeps full command logs locally and feeds AI coding agents compact, expandable evidence.
 
 common commands:
   logdiet install
   logdiet env
-  logdiet wrap -- <cmd>
-  logdiet show <run-id>:<handle> --around 40
-  logdiet raw
-  logdiet grep latest "pattern"
+  logdiet wrap -- pytest -q
+  logdiet show latest:F1 --around 40
+  logdiet raw latest
+  logdiet grep latest "panic"
   logdiet lint-instructions
   logdiet rules --print
   logdiet bench-fixtures

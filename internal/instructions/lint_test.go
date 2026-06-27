@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestLintDetectsAndFixesSafeNoise(t *testing.T) {
@@ -61,5 +62,99 @@ func TestInstallRulesIsIdempotent(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, ".logdiet", "backup")); err != nil {
 		t.Fatalf("backup dir missing: %v", err)
+	}
+}
+
+func TestRulesInstallReplaceAndRemoveManagedSection(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "AGENTS.md")
+	original := "before user content\n\n" + BeginMarker + "\nold managed text\n" + EndMarker + "\n\nafter user content\n"
+	if err := os.WriteFile(path, []byte(original), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := InstallRules(dir, "codex", false); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(b)
+	if strings.Count(s, BeginMarker) != 1 || strings.Count(s, EndMarker) != 1 {
+		t.Fatalf("install should leave exactly one managed section:\n%s", s)
+	}
+	if strings.Contains(s, "old managed text") {
+		t.Fatalf("install did not replace old managed section:\n%s", s)
+	}
+	if !strings.Contains(s, "before user content") || !strings.Contains(s, "after user content") {
+		t.Fatalf("install did not preserve user content:\n%s", s)
+	}
+
+	if _, err := RemoveRules(dir, "codex"); err != nil {
+		t.Fatal(err)
+	}
+	b, err = os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s = string(b)
+	if strings.Contains(s, BeginMarker) || strings.Contains(s, EndMarker) || strings.Contains(s, RulesText) {
+		t.Fatalf("uninstall did not remove managed section:\n%s", s)
+	}
+	if !strings.Contains(s, "before user content") || !strings.Contains(s, "after user content") {
+		t.Fatalf("uninstall did not preserve user content:\n%s", s)
+	}
+}
+
+func TestReplaceManagedSectionsHandlesMalformedMarkers(t *testing.T) {
+	cases := []string{
+		"no markers\n",
+		BeginMarker + "\nunterminated managed section\n",
+		EndMarker + "\nend before begin\n",
+		"prefix\n" + EndMarker + "\n" + BeginMarker + "\nsuffix\n",
+	}
+	for _, tc := range cases {
+		done := make(chan string, 1)
+		go func(in string) {
+			done <- replaceManagedSections(in, ManagedRulesBlock())
+		}(tc)
+		select {
+		case got := <-done:
+			if got == "" {
+				t.Fatalf("malformed marker case returned empty output for %q", tc)
+			}
+		case <-time.After(250 * time.Millisecond):
+			t.Fatalf("replaceManagedSections did not return for malformed input %q", tc)
+		}
+	}
+}
+
+func TestFixTextReplacesAbsolutePathsWithPlaceholders(t *testing.T) {
+	input := strings.Join([]string{
+		"linux /home/alice/project/file.go",
+		"mac /Users/bob/project/file.go",
+		"windows C:\\Users\\carol\\project\\file.go",
+		"repo /repo/logdiet/internal/cli.go",
+		"```",
+		"fenced /home/alice/project/file.go",
+		"fenced C:\\Users\\carol\\project\\file.go",
+		"```",
+		"",
+	}, "\n")
+	got := fixText(input, "", "/repo/logdiet")
+	for _, want := range []string{
+		"linux <home>/project/file.go",
+		"mac <home>/project/file.go",
+		"windows <home>\\project\\file.go",
+		"repo <repo>/internal/cli.go",
+		"fenced /home/alice/project/file.go",
+		"fenced C:\\Users\\carol\\project\\file.go",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("fixed text missing %q:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "/<home>/") || strings.Contains(got, "$1") || strings.Contains(got, "$2") {
+		t.Fatalf("fixed text contains invalid replacement artifact:\n%s", got)
 	}
 }

@@ -27,8 +27,8 @@ var (
 	dateRE      = regexp.MustCompile(`\b20[0-9]{2}-[01][0-9]-[0-3][0-9]\b`)
 	timeRE      = regexp.MustCompile(`\b[0-3]?[0-9]:[0-5][0-9](:[0-5][0-9])?\b`)
 	stampWordRE = regexp.MustCompile(`(?i)(generated|created|updated|last updated|timestamp|current[- ]date)`)
-	winUserRE   = regexp.MustCompile(`(?i)C:\\Users\\[^\\\s]+\\[^\s]+`)
-	unixUserRE  = regexp.MustCompile(`/(Users|home)/[^/\s]+/[^\s]+`)
+	winUserRE   = regexp.MustCompile(`(?i)C:\\Users\\[^\\\s]+((?:\\[^\s\\]+)*)`)
+	unixUserRE  = regexp.MustCompile(`/(?:Users|home)/[^/\s]+((?:/[^\s/]+)*)`)
 )
 
 func Lint(root string) ([]Finding, error) {
@@ -202,8 +202,8 @@ func fixText(s, home, repoAbs string) string {
 			if home != "" {
 				next = strings.ReplaceAll(next, home, "<home>")
 			}
-			next = winUserRE.ReplaceAllString(next, `<home>\$1`)
-			next = unixUserRE.ReplaceAllString(next, `/<home>/$2`)
+			next = winUserRE.ReplaceAllString(next, `<home>${1}`)
+			next = unixUserRE.ReplaceAllString(next, `<home>${1}`)
 			norm := strings.ToLower(textutil.NormalizeSpace(next))
 			if norm != "" {
 				if seen[norm] {
