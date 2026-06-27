@@ -1,5 +1,7 @@
 # Agent Self-Install
 
+A token diet kit your coding agent can install and use by itself.
+
 ## Goal
 
 A user should be able to say:
@@ -18,9 +20,17 @@ The agent should install LogDiet and start using it without requiring native hoo
 4. Use `logdiet wrap -- <command>` for noisy commands.
 5. Use `show`, `grep`, and `raw` to expand evidence.
 
+```sh
+logdiet show latest:F1 --around 40
+logdiet grep latest "pattern"
+logdiet raw latest
+```
+
 ## Why hooks are optional
 
 Command hooks can modify command execution. Some agents require review/trust before hooks run.
+
+Hooks are optional advanced mode.
 
 LogDiet therefore treats hooks as advanced mode.
 
@@ -46,3 +56,7 @@ If bootstrap fails, use:
 ```sh
 logdiet wrap -- <command>
 ```
+
+## First prompt
+
+See [first-agent-prompt.md](first-agent-prompt.md) for a copy-paste prompt to give a coding agent.

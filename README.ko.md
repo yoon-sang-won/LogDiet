@@ -27,6 +27,8 @@
 
 No network. No telemetry. No model/API calls.
 
+A token diet kit your coding agent can install and use by itself.
+
 LogDiet 링크를 한 번 넘겨주면, 에이전트가 긴 테스트/빌드/git/검색 로그를 compact evidence로 줄여서 사용하게 됩니다.
 
 ## 가장 쉬운 사용법: 에이전트에게 맡기기
@@ -50,12 +52,21 @@ logdiet agent-instructions --agent auto
 
 ```sh
 logdiet wrap -- go test ./...
+logdiet wrap -- pytest -q
+logdiet wrap -- npm test
+logdiet wrap -- git diff
+logdiet wrap -- rg "pattern"
+```
+
+필요할 때만 evidence를 펼칩니다.
+
+```sh
 logdiet show latest:F1 --around 40
 logdiet grep latest "panic"
 logdiet raw latest
 ```
 
-Hooks are optional advanced mode. 기본 흐름은 rules와 명시적인 `logdiet wrap`만으로 동작합니다.
+hook은 고급 옵션입니다. 기본 흐름은 agent rules와 명시적인 `logdiet wrap`만으로 동작합니다.
 
 ## bootstrap 이후에는 무엇이 달라지나요?
 
@@ -211,6 +222,8 @@ logdiet hook rewrite --command "go test ./..."
 - Generic terminal agents: `integrations/generic/`
 
 v0.2 구조는 [docs/agent-native.md](docs/agent-native.md)를 참고하세요.
+self-install 흐름은 [docs/agent-self-install.md](docs/agent-self-install.md)를 참고하세요.
+에이전트에게 줄 복사/붙여넣기 프롬프트는 [docs/first-agent-prompt.md](docs/first-agent-prompt.md)를 참고하세요.
 
 ## 주요 명령
 
@@ -266,6 +279,7 @@ gofmt -w .
 go test ./...
 go install ./cmd/logdiet
 ./scripts/verify-release.sh
+./scripts/verify-agent-self-install.sh
 ```
 
 v0.2 검증은 [docs/v0.2-verification.md](docs/v0.2-verification.md)를 참고하세요.

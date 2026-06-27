@@ -27,6 +27,8 @@
 
 No network. No telemetry. No model/API calls.
 
+A token diet kit your coding agent can install and use by itself.
+
 Give LogDiet to your coding agent once; it learns to run noisy commands through compact, expandable evidence.
 
 ## Easiest path: tell your agent
@@ -46,16 +48,25 @@ logdiet doctor
 logdiet agent-instructions --agent auto
 ```
 
-After that, the agent should use:
+Then it should use LogDiet for noisy commands:
 
 ```sh
 logdiet wrap -- go test ./...
+logdiet wrap -- pytest -q
+logdiet wrap -- npm test
+logdiet wrap -- git diff
+logdiet wrap -- rg "pattern"
+```
+
+And expand evidence only when needed:
+
+```sh
 logdiet show latest:F1 --around 40
 logdiet grep latest "panic"
 logdiet raw latest
 ```
 
-Hooks are optional advanced mode. LogDiet works without hooks through rules plus explicit `logdiet wrap`.
+Hooks are optional advanced mode. The default path works through agent rules plus explicit `logdiet wrap`.
 
 ## What happens after bootstrap?
 
@@ -214,6 +225,7 @@ Integration packages live under `integrations/`:
 
 See [docs/agent-native.md](docs/agent-native.md) for the v0.2 architecture.
 See [docs/agent-self-install.md](docs/agent-self-install.md) for the self-install flow.
+See [docs/first-agent-prompt.md](docs/first-agent-prompt.md) for a copy-paste prompt to give your coding agent.
 
 ## Core commands
 
@@ -271,6 +283,7 @@ gofmt -w .
 go test ./...
 go install ./cmd/logdiet
 ./scripts/verify-release.sh
+./scripts/verify-agent-self-install.sh
 ```
 
 For v0.2 checks, see [docs/v0.2-verification.md](docs/v0.2-verification.md).

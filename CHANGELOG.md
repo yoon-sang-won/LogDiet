@@ -7,6 +7,8 @@
 - Repositioned LogDiet as an agent-native token diet layer powered by a local CLI engine.
 - README now leads with the agent self-install path.
 - Native hooks are documented as optional advanced mode, not the default requirement.
+- README and README.ko.md now surface the agent self-install flow earlier.
+- `AI_INSTALL.md`, `bootstrap`, and `agent-instructions` now more clearly tell agents to continue with `logdiet wrap` without requiring hooks.
 
 ### Added
 
@@ -18,6 +20,8 @@
 - `logdiet agent-instructions` for current-session operating rules.
 - Agent self-install documentation.
 - Tests for bootstrap and agent instruction flows.
+- `scripts/verify-agent-self-install.sh` for hookless self-install verification.
+- `docs/first-agent-prompt.md` with a copy-paste prompt for coding agents.
 - Agent-native documentation.
 - Setup modes for rules, shims, and native templates.
 - Doctor output for agent integration status.

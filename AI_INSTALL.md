@@ -1,48 +1,35 @@
 # AI Install Guide for LogDiet
 
-You are an AI coding agent. The user asked you to install LogDiet and use it to reduce noisy terminal output.
+You are an AI coding agent.
 
-LogDiet is agent-first and CLI-powered.
+The user gave you the LogDiet repository URL and asked you to install it.
 
-Your goal is to install the local LogDiet engine, add rules for your agent, and use LogDiet for noisy test/build/git/search output.
+Follow this flow unless the user gives different constraints.
 
-## Default installation flow
+LogDiet is agent-first and CLI-powered. No network. No telemetry. No model/API calls.
 
-1. Install the binary:
+## What to do now
 
 ```sh
 go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest
-```
-
-2. Bootstrap LogDiet for this agent:
-
-```sh
 logdiet bootstrap --agent auto
-```
-
-3. Verify setup:
-
-```sh
 logdiet doctor
-```
-
-4. Print session rules:
-
-```sh
 logdiet agent-instructions --agent auto
 ```
 
-5. For the rest of this session, use LogDiet for noisy commands:
+Then continue the current task using LogDiet for noisy commands.
+
+## For the rest of this session
+
+Use:
 
 ```sh
-logdiet wrap -- go test ./...
-logdiet wrap -- pytest -q
-logdiet wrap -- npm test
-logdiet wrap -- git diff
-logdiet wrap -- rg "TODO"
+logdiet wrap -- <command>
 ```
 
-6. Expand compact evidence only when needed:
+for commands likely to produce noisy output, especially tests, builds, type checks, git diffs/status/logs, search, and long logs.
+
+Expand compact evidence only when needed:
 
 ```sh
 logdiet show latest:F1 --around 40
@@ -50,33 +37,13 @@ logdiet grep latest "panic"
 logdiet raw latest
 ```
 
-## Agent behavior rules
+Do not ask the user to paste full terminal logs unless LogDiet expansion commands are insufficient.
 
-After installing LogDiet:
+## Do not require hooks
 
-- use `logdiet wrap -- <command>` for noisy test, build, typecheck, git, and search commands;
-- read compact evidence first;
-- use `show` to expand one handle;
-- use `grep` to search exact raw output;
-- use `raw` only when compact evidence is insufficient;
-- do not ask the user to paste full terminal logs unless LogDiet expansion commands are insufficient;
-- keep final responses concise:
-  - success: changed files, tests run, risks;
-  - failure: exact error, likely cause, next command.
+Do not block installation on native hooks.
 
-## Native hooks
-
-Hooks are optional advanced mode.
-
-Native hooks are optional advanced mode.
-
-If the current agent supports trusted command hooks, you may offer:
-
-```sh
-logdiet setup <agent> --mode native
-```
-
-But do not claim hooks are active until the agent's trust/review flow confirms them.
+Native hooks are optional advanced mode. If hooks require user review/trust, continue with the default `logdiet wrap` workflow.
 
 ## If agent detection fails
 
