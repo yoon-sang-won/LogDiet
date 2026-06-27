@@ -1,0 +1,17 @@
+FAIL src/datePicker.test.tsx
+PASS src/button.test.tsx
+PASS src/menu.test.tsx
+PASS src/profile.test.tsx
+PASS src/settings.test.tsx
+PASS src/timezone.test.tsx
+PASS src/format.test.tsx
+  DatePicker
+    x renders selected date
+
+  Expected: "2026-06-27"
+  Received: "invalid date"
+
+    at Object.<anonymous> (src/datePicker.test.tsx:28:17)
+
+Test Suites: 1 failed, 3 passed, 4 total
+Tests:       1 failed, 42 passed, 43 total

@@ -1,0 +1,19 @@
+   Compiling diet v0.1.0
+   Compiling diet-support v0.1.0
+   Compiling diet-cli v0.1.0
+   Compiling diet-store v0.1.0
+   Compiling diet-parser v0.1.0
+   Compiling diet-fixtures v0.1.0
+    Finished test profile [unoptimized + debuginfo] target(s) in 2.41s
+error[E0308]: mismatched types
+  --> src/lib.rs:12:5
+   |
+12 |     "42"
+   |     ^^^^ expected integer, found string
+
+thread 'tests::captures_output' panicked at src/lib.rs:44:9:
+expected capture file to exist
+failures:
+    tests::captures_output
+
+test result: FAILED. 12 passed; 1 failed; 0 ignored; finished in 0.04s

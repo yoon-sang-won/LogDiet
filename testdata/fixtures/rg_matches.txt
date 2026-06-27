@@ -1,0 +1,26 @@
+internal/cli/cli.go:42:TODO: parse --json flag
+internal/cli/cli.go:87:TODO: improve usage error
+internal/cli/cli.go:103:TODO: add shell detection
+internal/cli/cli.go:128:TODO: tighten grep usage
+internal/cli/cli.go:166:TODO: split raw command parser
+internal/cli/cli.go:214:TODO: add Windows smoke fixture
+internal/cli/cli.go:260:TODO: simplify install output
+internal/cli/cli.go:301:TODO: document latest shortcut
+internal/cli/cli.go:344:TODO: reject invalid around value
+internal/cli/cli.go:389:TODO: normalize stream flag names
+internal/cli/cli.go:422:TODO: test bypass mode
+internal/cli/cli.go:468:TODO: cover shim recursion guard
+internal/cli/cli.go:509:TODO: preserve child exit code
+internal/store/store.go:12:TODO: add metadata validation
+internal/store/store.go:38:TODO: validate run id
+internal/store/store.go:79:TODO: check latest pointer atomically
+internal/store/store.go:101:TODO: expose raw path helper
+internal/store/store.go:144:TODO: verify backup path
+internal/store/store.go:188:TODO: use atomic latest write
+internal/store/store.go:209:TODO: test missing run error
+docs/design-boundaries.md:8:TODO: remove draft note
+docs/design-boundaries.md:16:TODO: add contribution example
+README.md:45:TODO: add asciinema later
+README.md:91:TODO: mention shell-specific activation
+README.md:124:TODO: add troubleshooting table
+README.md:151:TODO: clarify no telemetry

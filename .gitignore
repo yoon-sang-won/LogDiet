@@ -1,0 +1,6 @@
+/logdiet
+*.exe
+*.test
+.coverage
+.logdiet/runs/
+.logdiet/backup/

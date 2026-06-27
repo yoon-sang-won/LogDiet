@@ -1,0 +1,9 @@
+[1/100] compiling package alpha
+[2/100] compiling package beta
+[3/100] compiling package gamma
+[4/100] compiling package delta
+warning: unused variable in examples/demo.go:9
+[5/100] linking app
+[5/100] linking app
+[5/100] linking app
+build completed successfully in 4.2s

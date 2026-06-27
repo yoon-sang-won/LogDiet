@@ -1,0 +1,13 @@
+src/app.ts(12,5): error TS2322: Type 'string' is not assignable to type 'number'.
+src/app.ts(18,10): error TS2554: Expected 2 arguments, but got 1.
+src/components/Button.tsx:31:7 - error TS2741: Property 'label' is missing in type '{}'.
+Files:                         84
+Lines of Library:           38920
+Lines of Definitions:        1820
+Lines of TypeScript:         6400
+Identifiers:                44210
+Symbols:                    31840
+Types:                      11420
+Instantiations:              2900
+Memory used:               78120K
+Total time:                 2.71s

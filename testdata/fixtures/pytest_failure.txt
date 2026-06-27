@@ -1,0 +1,20 @@
+test_api.py::test_health PASSED
+test_api.py::test_create_user FAILED
+test_auth.py::test_requires_token FAILED
+test_misc.py::test_clock PASSED
+
+=================================== FAILURES ===================================
+_______________________________ test_create_user _______________________________
+Traceback (most recent call last):
+  File "tests/test_api.py", line 42, in test_create_user
+    assert response.status_code == 200
+E   AssertionError: expected 200, got 500
+FAILED tests/test_api.py::test_create_user - AssertionError: expected 200, got 500
+
+______________________________ test_requires_token ______________________________
+  File "tests/test_auth.py", line 17, in test_requires_token
+    raise ValueError("missing token")
+E   ValueError: missing token
+FAILED tests/test_auth.py::test_requires_token - ValueError: missing token
+
+=========================== 2 failed, 31 passed in 1.24s ===========================
