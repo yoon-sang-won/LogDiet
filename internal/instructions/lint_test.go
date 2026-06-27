@@ -222,3 +222,31 @@ func TestLintScansAntigravityRulesAndJSONStable(t *testing.T) {
 		}
 	}
 }
+
+func TestLintDetectsLongExamplesAndVolatileCommandOutput(t *testing.T) {
+	dir := t.TempDir()
+	lines := []string{"Example: pasted terminal session"}
+	for i := 0; i < 42; i++ {
+		lines = append(lines, "example output line")
+	}
+	lines = append(lines,
+		"ok  \tgithub.com/yoon-sang-won/LogDiet/internal/cli\t0.123s",
+		"FAIL\tgithub.com/yoon-sang-won/LogDiet/internal/store\t0.456s",
+	)
+	if err := os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte(strings.Join(lines, "\n")+"\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	findings, err := Lint(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	kinds := map[string]bool{}
+	for _, f := range findings {
+		kinds[f.Kind] = true
+	}
+	for _, want := range []string{"long-example", "volatile-command-output"} {
+		if !kinds[want] {
+			t.Fatalf("missing %s finding in %#v", want, findings)
+		}
+	}
+}

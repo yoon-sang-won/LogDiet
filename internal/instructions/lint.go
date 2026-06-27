@@ -29,6 +29,7 @@ var (
 	stampWordRE = regexp.MustCompile(`(?i)(generated|created|updated|last updated|timestamp|current[- ]date)`)
 	winUserRE   = regexp.MustCompile(`(?i)C:\\Users\\[^\\\s]+((?:\\[^\s\\]+)*)`)
 	unixUserRE  = regexp.MustCompile(`/(?:Users|home)/[^/\s]+((?:/[^\s/]+)*)`)
+	goTestOutRE = regexp.MustCompile(`^(ok|FAIL)\s+\S+\s+([0-9.]+s|\[no test files\])`)
 )
 
 func Lint(root string) ([]Finding, error) {
@@ -126,6 +127,9 @@ func lintFile(root, path string) ([]Finding, error) {
 		if hasAbsPath(line, home, repoAbs) {
 			findings = append(findings, finding(root, path, i+1, "absolute-path", "absolute local path can change across machines and waste prompt cache", true))
 		}
+		if looksVolatileCommandOutput(line) {
+			findings = append(findings, finding(root, path, i+1, "volatile-command-output", "pasted command output can bloat repeated instruction context", false))
+		}
 		norm := strings.ToLower(textutil.NormalizeSpace(line))
 		if norm != "" {
 			if prev, ok := seen[norm]; ok {
@@ -143,6 +147,9 @@ func lintFile(root, path string) ([]Finding, error) {
 	}
 	if inFence && len(lines)+1-fenceStart > 80 {
 		findings = append(findings, finding(root, path, fenceStart, "large-code-fence", "large code fence can dominate repeated prompts", false))
+	}
+	for _, line := range longExampleStarts(lines) {
+		findings = append(findings, finding(root, path, line, "long-example", "long example over 40 lines can dominate repeated prompts", false))
 	}
 	return findings, nil
 }
@@ -292,6 +299,56 @@ func hasAbsPath(line, home, repoAbs string) bool {
 	return (home != "" && strings.Contains(line, home)) ||
 		(repoAbs != "" && strings.Contains(line, repoAbs)) ||
 		winUserRE.MatchString(line) || unixUserRE.MatchString(line)
+}
+
+func looksVolatileCommandOutput(line string) bool {
+	trim := strings.TrimSpace(line)
+	return goTestOutRE.MatchString(trim) ||
+		strings.HasPrefix(trim, "=== RUN ") ||
+		strings.HasPrefix(trim, "--- PASS:") ||
+		strings.HasPrefix(trim, "--- FAIL:") ||
+		strings.HasPrefix(trim, "npm ERR!") ||
+		strings.Contains(trim, "[100%]")
+}
+
+func longExampleStarts(lines []string) []int {
+	var starts []int
+	inFence := false
+	exampleStart := 0
+	exampleLines := 0
+	for i, line := range lines {
+		trim := strings.TrimSpace(line)
+		if strings.HasPrefix(trim, "```") || strings.HasPrefix(trim, "~~~") {
+			if exampleStart > 0 && exampleLines > 40 {
+				starts = append(starts, exampleStart)
+			}
+			exampleStart, exampleLines = 0, 0
+			inFence = !inFence
+			continue
+		}
+		if inFence {
+			continue
+		}
+		if exampleStart == 0 {
+			if strings.Contains(strings.ToLower(trim), "example") {
+				exampleStart = i + 1
+				exampleLines = 1
+			}
+			continue
+		}
+		if trim == "" {
+			if exampleLines > 40 {
+				starts = append(starts, exampleStart)
+			}
+			exampleStart, exampleLines = 0, 0
+			continue
+		}
+		exampleLines++
+	}
+	if exampleStart > 0 && exampleLines > 40 {
+		starts = append(starts, exampleStart)
+	}
+	return starts
 }
 
 func finding(root, path string, line int, kind, msg string, fixable bool) Finding {
