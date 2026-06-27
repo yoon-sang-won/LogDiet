@@ -80,16 +80,16 @@ func Render(res Result) string {
 	}
 	if res.RunID != "" {
 		for _, item := range res.Items {
-			fmt.Fprintf(&b, "show: logdiet show %s:%s --around 40\n", res.RunID, item.ID)
+			fmt.Fprintf(&b, "show: logdiet show latest:%s --around 40\n", item.ID)
 		}
-		fmt.Fprintf(&b, "raw: logdiet raw %s\n", res.RunID)
-		fmt.Fprintf(&b, "grep: logdiet grep %s \"pattern\"\n", res.RunID)
+		fmt.Fprintf(&b, "raw: logdiet raw latest\n")
+		fmt.Fprintf(&b, "grep: logdiet grep latest \"pattern\"\n")
 	} else {
 		for _, item := range res.Items {
-			fmt.Fprintf(&b, "show: logdiet show <run-id>:%s --around 40\n", item.ID)
+			fmt.Fprintf(&b, "show: logdiet show latest:%s --around 40\n", item.ID)
 		}
-		fmt.Fprintf(&b, "raw: logdiet raw <run-id>\n")
-		fmt.Fprintf(&b, "grep: logdiet grep <run-id> \"pattern\"\n")
+		fmt.Fprintf(&b, "raw: logdiet raw latest\n")
+		fmt.Fprintf(&b, "grep: logdiet grep latest \"pattern\"\n")
 	}
 	stats := res.Stats
 	if stats.CompactBytes == 0 {

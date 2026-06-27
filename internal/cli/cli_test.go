@@ -34,6 +34,18 @@ func TestCLIWrapRawShowAndGrep(t *testing.T) {
 	if !strings.Contains(out.String(), "logdiet run") || !strings.Contains(out.String(), "raw:") {
 		t.Fatalf("bad wrap output:\n%s", out.String())
 	}
+	for _, want := range []string{
+		"cmd:",
+		"summary:",
+		"show: logdiet show latest:F1 --around 40",
+		"raw: logdiet raw latest",
+		"stats:",
+		"approx_saved=",
+	} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("wrap output missing %q:\n%s", want, out.String())
+		}
+	}
 	runIDBytes, err := os.ReadFile(filepath.Join(dir, ".logdiet", "latest"))
 	if err != nil {
 		t.Fatalf("latest pointer missing: %v", err)
@@ -136,6 +148,22 @@ func TestCLICommonCommands(t *testing.T) {
 	if code := Run([]string{"install"}, &out, &errb); code != 0 {
 		t.Fatalf("install exit=%d out=%s err=%s", code, out.String(), errb.String())
 	}
+	for _, want := range []string{
+		"LogDiet installed",
+		"state: .logdiet OK",
+		"shims: .logdiet/bin OK",
+		"runs: .logdiet/runs OK",
+		"activate:",
+		`eval "$(logdiet env)"`,
+		"PowerShell:",
+		"Invoke-Expression (logdiet env --shell powershell)",
+		"verify:",
+		"logdiet doctor",
+	} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("install output missing %q:\n%s", want, out.String())
+		}
+	}
 	if _, err := os.Stat(filepath.Join(dir, ".logdiet", "bin")); err != nil {
 		t.Fatalf("install did not create shim dir: %v", err)
 	}
@@ -193,7 +221,18 @@ func TestCLIBenchFixturesFromRepo(t *testing.T) {
 	if code := Run([]string{"bench-fixtures"}, &out, &errb); code != 0 {
 		t.Fatalf("bench exit=%d out=%s err=%s", code, out.String(), errb.String())
 	}
-	for _, want := range []string{"pytest_failure.txt", "rg_matches.txt", "approx token counts"} {
+	for _, want := range []string{
+		"fixture",
+		"raw_bytes",
+		"compact_bytes",
+		"approx_raw_tokens",
+		"approx_compact_tokens",
+		"reduction",
+		"handles",
+		"pytest_failure.txt",
+		"rg_matches.txt",
+		"approx token estimates use ceil(bytes / 4)",
+	} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("bench output missing %q:\n%s", want, out.String())
 		}
@@ -230,7 +269,9 @@ func TestSetupCodexAndAntigravity(t *testing.T) {
 			if strings.Count(string(b), "BEGIN LOGDIET MANAGED RESPONSE CONTRACT") != 1 {
 				t.Fatalf("setup wrote duplicate or missing managed section:\n%s", string(b))
 			}
-			if !strings.Contains(out.String(), "logdiet doctor") || !strings.Contains(out.String(), "Invoke-Expression") {
+			if !strings.Contains(out.String(), "logdiet doctor") ||
+				!strings.Contains(out.String(), "PowerShell:") ||
+				!strings.Contains(out.String(), "Invoke-Expression") {
 				t.Fatalf("setup output missing activation/doctor hints:\n%s", out.String())
 			}
 			out.Reset()
@@ -281,7 +322,7 @@ func TestDoctorBeforeAndAfterInstall(t *testing.T) {
 	if code := Run([]string{"doctor"}, &out, &errb); code != 0 {
 		t.Fatalf("doctor after install exit=%d out=%s err=%s", code, out.String(), errb.String())
 	}
-	for _, want := range []string{"PATH: .logdiet/bin is first OK", "agent rules:", "Codex AGENTS.md:"} {
+	for _, want := range []string{"PATH: .logdiet/bin is first OK", "agent rules:", "Codex AGENTS.md:", "latest run: none"} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("doctor output missing %q:\n%s", want, out.String())
 		}

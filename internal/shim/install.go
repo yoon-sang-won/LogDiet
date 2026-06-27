@@ -28,15 +28,27 @@ func Install(root, exePath string, opts InstallOptions) (string, error) {
 		}
 	}
 	bin := filepath.Join(store.StateDir(root), "bin")
-	var written []string
 	for _, cmd := range ShimCommands {
 		path := shimPath(bin, cmd)
 		if err := writeShim(path, exePath, cmd, opts.Force); err != nil {
 			return "", err
 		}
-		written = append(written, path)
 	}
-	return fmt.Sprintf("installed %d shims in %s\n%s", len(written), bin, ActivationInstructions()), nil
+	return fmt.Sprintf(`LogDiet installed
+
+state: .logdiet OK
+shims: .logdiet/bin OK
+runs: .logdiet/runs OK
+
+activate:
+  eval "$(logdiet env)"
+
+PowerShell:
+  Invoke-Expression (logdiet env --shell powershell)
+
+verify:
+  logdiet doctor
+`), nil
 }
 
 func Uninstall(root string) (string, error) {

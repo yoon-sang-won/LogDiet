@@ -388,6 +388,8 @@ func setupCommand(root string, args []string, stdout, stderr io.Writer) int {
 	fmt.Fprintln(stdout)
 	fmt.Fprintln(stdout, "activate:")
 	fmt.Fprintln(stdout, `  eval "$(logdiet env)"`)
+	fmt.Fprintln(stdout)
+	fmt.Fprintln(stdout, "PowerShell:")
 	fmt.Fprintln(stdout, `  Invoke-Expression (logdiet env --shell powershell)`)
 	fmt.Fprintln(stdout)
 	fmt.Fprintln(stdout, "verify:")
@@ -505,9 +507,11 @@ func doctorCommand(root string, args []string, stdout, stderr io.Writer) int {
 		}
 		fmt.Fprintf(stdout, "  %s %s: %s\n", entry.label, ruleDisplayPath(entry.target), status)
 	}
+	fmt.Fprintln(stdout)
 	if latest, err := store.LatestRunID(root); err == nil {
-		fmt.Fprintln(stdout)
 		fmt.Fprintf(stdout, "latest run: %s\n", latest)
+	} else {
+		fmt.Fprintln(stdout, "latest run: none")
 	}
 	if !healthy {
 		fmt.Fprintln(stdout)

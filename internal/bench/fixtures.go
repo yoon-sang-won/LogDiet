@@ -50,11 +50,13 @@ func Run(root string) ([]FixtureResult, error) {
 
 func Format(results []FixtureResult) string {
 	var b strings.Builder
+	fmt.Fprintf(&b, "%-24s %9s %13s %18s %21s %10s %7s\n",
+		"fixture", "raw_bytes", "compact_bytes", "approx_raw_tokens", "approx_compact_tokens", "reduction", "handles")
 	for _, r := range results {
-		fmt.Fprintf(&b, "%s raw=%dB compact=%dB reduction=%.1f%% approx_tokens=%d->%d handles=%d\n",
-			r.Name, r.RawBytes, r.CompactBytes, r.ReductionPct, r.ApproxRawTokens, r.ApproxCompactTokens, r.HandleCount)
+		fmt.Fprintf(&b, "%-24s %9d %13d %18d %21d %9.1f%% %7d\n",
+			r.Name, r.RawBytes, r.CompactBytes, r.ApproxRawTokens, r.ApproxCompactTokens, r.ReductionPct, r.HandleCount)
 	}
-	b.WriteString("approx token counts use (bytes+3)/4 and are not provider billing measurements\n")
+	b.WriteString("\napprox token estimates use ceil(bytes / 4) and are not provider billing measurements\n")
 	return b.String()
 }
 
