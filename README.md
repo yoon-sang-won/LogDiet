@@ -158,6 +158,13 @@ cd LogDiet
 
 For manual verification, see [docs/verification.md](docs/verification.md).
 
+More release resources:
+
+- [CHANGELOG.md](CHANGELOG.md)
+- [docs/demo.md](docs/demo.md)
+- [docs/release-notes-v0.1.0.md](docs/release-notes-v0.1.0.md)
+- [docs/release-checklist.md](docs/release-checklist.md)
+
 ## Raw Expansion
 
 ```sh

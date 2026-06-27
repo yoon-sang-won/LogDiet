@@ -45,6 +45,10 @@ cd "$tmpdir/LogDiet"
 - Fresh clone verification passes.
 - README install command is correct.
 - No `.logdiet/runs` or `.logdiet/backup` files are committed.
+- Run a real dogfood test in at least one Go, Python, or Node repo.
+- Run at least one agent-specific setup flow.
+- Set repository description.
+- Set repository topics.
 - Tag release:
 
 ```sh
@@ -52,6 +56,9 @@ cd "$tmpdir/LogDiet"
 git tag v0.1.0
 git push origin v0.1.0
 ```
+
+- Create GitHub Release from tag `v0.1.0`.
+- Paste `docs/release-notes-v0.1.0.md` into the release body.
 
 ## Repository Metadata
 
@@ -64,5 +71,16 @@ Put your coding agent on a token diet. Local logs, compact evidence.
 Suggested topics:
 
 ```text
-ai coding-agent developer-tools cli go token-optimization logs terminal codex claude-code cursor antigravity
+ai
+coding-agent
+developer-tools
+cli
+go
+token-optimization
+logs
+terminal
+codex
+claude-code
+cursor
+antigravity
 ```
