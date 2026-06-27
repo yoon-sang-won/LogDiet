@@ -12,25 +12,4 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-      - run: |
-          set +e
-          go test ./... > gotest.txt 2>&1
-          status=$?
-          cat gotest.txt
-          if [ "$status" -ne 0 ]; then
-            python3 - <<'PY'
-          from pathlib import Path
-
-          lines = Path("gotest.txt").read_text(errors="replace").splitlines()
-          interesting = [
-              line for line in lines
-              if "FAIL" in line or "panic:" in line or "Error:" in line or "expected" in line or "exit=" in line
-          ]
-          if not interesting:
-              interesting = lines[-40:]
-          for line in interesting[:80]:
-              msg = line.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
-              print(f"::error file=.github/workflows/test.yml,line=19::{msg}")
-          PY
-          fi
-          exit "$status"
+      - run: go test ./...
