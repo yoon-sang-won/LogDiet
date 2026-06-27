@@ -129,6 +129,10 @@ func TestCLICommonCommands(t *testing.T) {
 		"logdiet raw latest",
 		"logdiet grep latest \"panic\"",
 		"logdiet hook rewrite --command \"go test ./...\"",
+		"bootstrap              install LogDiet rules/shims for an AI agent",
+		"agent-instructions     print session instructions for an AI agent",
+		"logdiet bootstrap --agent auto",
+		"logdiet agent-instructions --agent auto",
 	} {
 		if !strings.Contains(help, want) {
 			t.Fatalf("help missing %q:\n%s", want, help)
@@ -208,6 +212,142 @@ func TestCLICommonCommands(t *testing.T) {
 
 	out.Reset()
 	errb.Reset()
+}
+
+func TestBootstrapGenericCodexAndAuto(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		args      []string
+		rulesFile string
+		agentLine string
+	}{
+		{
+			name:      "generic",
+			args:      []string{"bootstrap", "--agent", "generic"},
+			rulesFile: filepath.Join(".logdiet", "LOGDIET_RULES.md"),
+			agentLine: "agent: generic",
+		},
+		{
+			name:      "codex",
+			args:      []string{"bootstrap", "--agent", "codex"},
+			rulesFile: "AGENTS.md",
+			agentLine: "agent: codex",
+		},
+		{
+			name:      "auto no signals",
+			args:      []string{"bootstrap", "--agent", "auto"},
+			rulesFile: filepath.Join(".logdiet", "LOGDIET_RULES.md"),
+			agentLine: "agent: generic",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			oldwd, _ := os.Getwd()
+			if err := os.Chdir(dir); err != nil {
+				t.Fatal(err)
+			}
+			defer os.Chdir(oldwd)
+
+			var out, errb bytes.Buffer
+			if code := Run(tc.args, &out, &errb); code != 0 {
+				t.Fatalf("bootstrap exit=%d out=%s err=%s", code, out.String(), errb.String())
+			}
+			for _, rel := range []string{filepath.Join(".logdiet", "runs"), filepath.Join(".logdiet", "bin"), tc.rulesFile} {
+				if _, err := os.Stat(filepath.Join(dir, rel)); err != nil {
+					t.Fatalf("bootstrap missing %s: %v\n%s", rel, err, out.String())
+				}
+			}
+			for _, want := range []string{
+				"LogDiet bootstrap complete",
+				tc.agentLine,
+				"engine: OK",
+				"state: .logdiet OK",
+				"runs: .logdiet/runs OK",
+				"shims: .logdiet/bin OK",
+				"Use LogDiet from now on:",
+				"logdiet wrap -- go test ./...",
+				"logdiet wrap -- rg \"pattern\"",
+				"Expand evidence:",
+				"logdiet show latest:F1 --around 40",
+				"Verify:",
+				"logdiet doctor",
+			} {
+				if !strings.Contains(out.String(), want) {
+					t.Fatalf("bootstrap output missing %q:\n%s", want, out.String())
+				}
+			}
+			if strings.Contains(out.String(), "hook enabled") {
+				t.Fatalf("bootstrap should not claim hooks are enabled:\n%s", out.String())
+			}
+		})
+	}
+}
+
+func TestBootstrapUsageErrors(t *testing.T) {
+	var out, errb bytes.Buffer
+	if code := Run([]string{"bootstrap", "--agent", "unknown"}, &out, &errb); code != 2 {
+		t.Fatalf("bootstrap invalid agent exit=%d out=%s err=%s", code, out.String(), errb.String())
+	}
+}
+
+func TestAgentInstructionsGenericAndCodex(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{
+			name: "generic",
+			args: []string{"agent-instructions", "--agent", "generic"},
+			want: []string{
+				"LogDiet session instructions",
+				"For the rest of this session:",
+				"Use `logdiet wrap -- <command>` for noisy commands.",
+				"logdiet show latest:F1 --around 40",
+				"logdiet grep latest \"pattern\"",
+				"logdiet raw latest",
+				"logdiet wrap -- go test ./...",
+			},
+		},
+		{
+			name: "codex",
+			args: []string{"agent-instructions", "--agent", "codex"},
+			want: []string{
+				"LogDiet session instructions",
+				"Codex rules are usually installed in AGENTS.md.",
+				"logdiet wrap -- pytest -q",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			oldwd, _ := os.Getwd()
+			if err := os.Chdir(dir); err != nil {
+				t.Fatal(err)
+			}
+			defer os.Chdir(oldwd)
+
+			var out, errb bytes.Buffer
+			if code := Run(tc.args, &out, &errb); code != 0 {
+				t.Fatalf("agent-instructions exit=%d out=%s err=%s", code, out.String(), errb.String())
+			}
+			for _, want := range tc.want {
+				if !strings.Contains(out.String(), want) {
+					t.Fatalf("agent-instructions output missing %q:\n%s", want, out.String())
+				}
+			}
+			if _, err := os.Stat(filepath.Join(dir, ".logdiet")); !os.IsNotExist(err) {
+				t.Fatalf("agent-instructions should not modify files, err=%v", err)
+			}
+		})
+	}
+}
+
+func TestAgentInstructionsUsageErrors(t *testing.T) {
+	var out, errb bytes.Buffer
+	if code := Run([]string{"agent-instructions", "--agent", "unknown"}, &out, &errb); code != 2 {
+		t.Fatalf("agent-instructions invalid agent exit=%d out=%s err=%s", code, out.String(), errb.String())
+	}
 }
 
 func TestCLIHookRewriteJSON(t *testing.T) {
@@ -420,7 +560,7 @@ func TestCodexSetupOutputsContainOperationalInstructions(t *testing.T) {
 		"logdiet show latest:F1 --around 40",
 		"logdiet grep latest",
 		"logdiet raw latest",
-		"do not ask the user to paste full terminal logs",
+		"do not ask the user to paste full logs",
 	} {
 		if !strings.Contains(string(agents), want) {
 			t.Fatalf("AGENTS.md missing %q:\n%s", want, string(agents))

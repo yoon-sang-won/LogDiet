@@ -49,6 +49,10 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return grepCommand(root, args[1:], stdout, stderr)
 	case "install":
 		return installCommand(root, args[1:], stdout, stderr)
+	case "bootstrap":
+		return bootstrapCommand(root, args[1:], stdout, stderr)
+	case "agent-instructions":
+		return agentInstructionsCommand(root, args[1:], stdout, stderr)
 	case "setup":
 		return setupCommand(root, args[1:], stdout, stderr)
 	case "doctor":
@@ -78,6 +82,11 @@ func helpText() string {
 
 common commands:
   logdiet install
+  bootstrap              install LogDiet rules/shims for an AI agent
+  agent-instructions     print session instructions for an AI agent
+  logdiet bootstrap --agent auto
+  logdiet bootstrap --agent codex
+  logdiet agent-instructions --agent auto
   logdiet setup codex --mode all
   logdiet doctor
   logdiet env

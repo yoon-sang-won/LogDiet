@@ -73,7 +73,7 @@ contains AGENTS.md "logdiet wrap"
 contains AGENTS.md "logdiet show latest:F1 --around 40"
 contains AGENTS.md "logdiet grep latest"
 contains AGENTS.md "logdiet raw latest"
-contains AGENTS.md "do not ask the user to paste full terminal logs"
+contains AGENTS.md "do not ask the user to paste full logs"
 
 step "verify hook rewrite JSON"
 # verifies: logdiet hook rewrite --command "go test ./..."

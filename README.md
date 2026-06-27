@@ -27,6 +27,49 @@
 
 No network. No telemetry. No model/API calls.
 
+Give LogDiet to your coding agent once; it learns to run noisy commands through compact, expandable evidence.
+
+## Easiest path: tell your agent
+
+Give your coding agent this instruction:
+
+```text
+Install https://github.com/yoon-sang-won/LogDiet and use it for noisy test/build/git/search output.
+```
+
+The agent should run:
+
+```sh
+go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest
+logdiet bootstrap --agent auto
+logdiet doctor
+logdiet agent-instructions --agent auto
+```
+
+After that, the agent should use:
+
+```sh
+logdiet wrap -- go test ./...
+logdiet show latest:F1 --around 40
+logdiet grep latest "panic"
+logdiet raw latest
+```
+
+Hooks are optional advanced mode. LogDiet works without hooks through rules plus explicit `logdiet wrap`.
+
+## What happens after bootstrap?
+
+LogDiet installs local project rules for your agent.
+
+From then on, the agent should:
+
+1. run noisy commands through `logdiet wrap -- <command>`;
+2. read compact evidence first;
+3. expand exact raw evidence only when needed;
+4. avoid asking you to paste full logs.
+
+Native command hooks can make this more automatic where supported, but they are not required for the default flow.
+
 ## Why
 
 Coding agents need command evidence, not terminal walls. Long test logs, diffs, search output, and stack traces consume context while hiding the lines that matter.
@@ -170,11 +213,14 @@ Integration packages live under `integrations/`:
 - Generic terminal agents: `integrations/generic/`
 
 See [docs/agent-native.md](docs/agent-native.md) for the v0.2 architecture.
+See [docs/agent-self-install.md](docs/agent-self-install.md) for the self-install flow.
 
 ## Core commands
 
 ```sh
 logdiet install
+logdiet bootstrap --agent auto
+logdiet agent-instructions --agent auto
 logdiet setup codex --mode rules
 logdiet setup codex --mode shim
 logdiet setup codex --mode native

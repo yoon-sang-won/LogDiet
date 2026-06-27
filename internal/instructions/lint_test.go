@@ -65,6 +65,27 @@ func TestInstallRulesIsIdempotent(t *testing.T) {
 	}
 }
 
+func TestManagedRulesTeachAgentToUseLogDiet(t *testing.T) {
+	for _, want := range []string{
+		"## LogDiet operating rule",
+		"logdiet wrap -- <command>",
+		"tests;",
+		"builds;",
+		"type checks;",
+		"git diffs/status/logs;",
+		"rg",
+		"grep",
+		"logdiet show latest:F1 --around 40",
+		"logdiet grep latest \"pattern\"",
+		"logdiet raw latest",
+		"do not ask the user to paste full logs",
+	} {
+		if !strings.Contains(RulesText, want) {
+			t.Fatalf("RulesText missing %q:\n%s", want, RulesText)
+		}
+	}
+}
+
 func TestRulesTargetsIncludeCursorAntigravityAndAll(t *testing.T) {
 	dir := t.TempDir()
 	for _, target := range []string{"generic", "codex", "claude", "cursor", "antigravity", "gemini"} {

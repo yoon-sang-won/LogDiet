@@ -9,6 +9,20 @@ import (
 
 func TestAgentNativeDocsAndIntegrationFiles(t *testing.T) {
 	files := map[string][]string{
+		"AI_INSTALL.md": {
+			"# AI Install Guide for LogDiet",
+			"You are an AI coding agent.",
+			"logdiet bootstrap --agent auto",
+			"logdiet agent-instructions --agent auto",
+			"Hooks are optional advanced mode.",
+		},
+		"docs/agent-self-install.md": {
+			"# Agent Self-Install",
+			"Install https://github.com/yoon-sang-won/LogDiet",
+			"logdiet bootstrap --agent auto",
+			"Why hooks are optional",
+			"logdiet wrap -- <command>",
+		},
 		"docs/agent-native.md": {
 			"# Agent-Native LogDiet",
 			"## Integration levels",
@@ -137,11 +151,13 @@ func TestReadmesAndChangelogIncludeV02Positioning(t *testing.T) {
 	for _, want := range []string{
 		"Agent-native token diet for coding agents.",
 		"Agent-first. CLI-powered. No network. No telemetry.",
-		"LogDiet has two layers:",
-		"Automatic command rewriting is available where the agent supports command hooks.",
-		"logdiet setup codex --mode all",
-		"logdiet hook rewrite --command \"go test ./...\"",
-		"docs/agent-native.md",
+		"## Easiest path: tell your agent",
+		"Install https://github.com/yoon-sang-won/LogDiet and use it for noisy test/build/git/search output.",
+		"logdiet bootstrap --agent auto",
+		"logdiet agent-instructions --agent auto",
+		"## What happens after bootstrap?",
+		"Hooks are optional advanced mode.",
+		"docs/agent-self-install.md",
 		"### Codex verification",
 		"./scripts/verify-codex-integration.sh",
 		"/hooks",
@@ -155,9 +171,10 @@ func TestReadmesAndChangelogIncludeV02Positioning(t *testing.T) {
 	for _, want := range []string{
 		"agent-native",
 		"Agent-first. CLI-powered. No network. No telemetry.",
-		"command hook",
-		"logdiet setup codex --mode all",
-		"logdiet hook rewrite --command \"go test ./...\"",
+		"## 가장 쉬운 사용법: 에이전트에게 맡기기",
+		"logdiet bootstrap --agent auto",
+		"logdiet agent-instructions --agent auto",
+		"## bootstrap 이후에는 무엇이 달라지나요?",
 		"Codex 검증",
 		"./scripts/verify-codex-integration.sh",
 		"/hooks",
@@ -174,10 +191,13 @@ func TestReadmesAndChangelogIncludeV02Positioning(t *testing.T) {
 	changelog := string(changelogBytes)
 	for _, want := range []string{
 		"## v0.2.0 - Unreleased",
-		"agent-native token diet layer",
-		"Agent integration packages under `integrations/`.",
-		"`logdiet hook rewrite`",
-		"Automatic command rewriting is available where an agent supports command hooks.",
+		"`AI_INSTALL.md` for agents installing LogDiet from a GitHub link.",
+		"`logdiet bootstrap` for agent self-install flows.",
+		"`logdiet agent-instructions` for current-session operating rules.",
+		"Agent self-install documentation.",
+		"Tests for bootstrap and agent instruction flows.",
+		"README now leads with the agent self-install path.",
+		"Native hooks are documented as optional advanced mode, not the default requirement.",
 	} {
 		if !strings.Contains(changelog, want) {
 			t.Fatalf("CHANGELOG.md missing %q", want)

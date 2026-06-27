@@ -27,6 +27,49 @@
 
 No network. No telemetry. No model/API calls.
 
+LogDiet 링크를 한 번 넘겨주면, 에이전트가 긴 테스트/빌드/git/검색 로그를 compact evidence로 줄여서 사용하게 됩니다.
+
+## 가장 쉬운 사용법: 에이전트에게 맡기기
+
+AI 코딩 에이전트에게 이렇게 말하세요.
+
+```text
+Install https://github.com/yoon-sang-won/LogDiet and use it for noisy test/build/git/search output.
+```
+
+에이전트는 다음 흐름을 실행하면 됩니다.
+
+```sh
+go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest
+logdiet bootstrap --agent auto
+logdiet doctor
+logdiet agent-instructions --agent auto
+```
+
+그 뒤 에이전트는 긴 출력이 나올 수 있는 명령을 이렇게 실행해야 합니다.
+
+```sh
+logdiet wrap -- go test ./...
+logdiet show latest:F1 --around 40
+logdiet grep latest "panic"
+logdiet raw latest
+```
+
+Hooks are optional advanced mode. 기본 흐름은 rules와 명시적인 `logdiet wrap`만으로 동작합니다.
+
+## bootstrap 이후에는 무엇이 달라지나요?
+
+LogDiet은 현재 프로젝트에 에이전트용 rules를 설치합니다.
+
+그 뒤 에이전트는:
+
+1. 긴 출력이 나올 수 있는 명령을 `logdiet wrap -- <command>`로 실행하고;
+2. compact evidence를 먼저 읽고;
+3. 필요할 때만 정확한 원문 로그를 펼쳐 보고;
+4. 사용자에게 전체 로그를 붙여 넣어 달라고 요청하지 않아야 합니다.
+
+command hook을 지원하는 환경에서는 더 자동화할 수 있지만, 기본 사용에는 hook이 필요하지 않습니다.
+
 ## 왜 필요한가
 
 코딩 에이전트에는 터미널 벽 전체가 아니라 정확한 증거가 필요합니다. 긴 테스트 로그, diff, 검색 결과, stack trace는 컨텍스트를 많이 쓰면서 중요한 줄을 숨깁니다.
