@@ -10,4 +10,5 @@ Requirements:
 - synthetic fixtures only;
 - do not copy code, docs, fixtures, or parser logic from other projects;
 - run `gofmt -w .`;
-- run `go test ./...`.
+- run `go test ./...`;
+- run `./scripts/verify-release.sh` before release.

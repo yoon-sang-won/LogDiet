@@ -7,3 +7,4 @@
 *.txt text eol=lf
 .gitignore text eol=lf
 LICENSE text eol=lf
+*.sh text eol=lf

@@ -3,11 +3,13 @@
 ## Required Checks
 
 ```sh
+./scripts/verify-release.sh
 gofmt -w .
 go test ./...
 go install ./cmd/logdiet
 logdiet --version
 logdiet help
+logdiet bench-fixtures
 ```
 
 ## Smoke Test
@@ -27,14 +29,26 @@ logdiet raw latest
 logdiet grep latest "panic"
 ```
 
+## Fresh Clone Verification
+
+```sh
+tmpdir="$(mktemp -d)"
+git clone https://github.com/yoon-sang-won/LogDiet "$tmpdir/LogDiet"
+cd "$tmpdir/LogDiet"
+./scripts/verify-release.sh
+```
+
 ## GitHub
 
 - Actions are green.
+- `.github/workflows/test.yml` runs direct `go test ./...`.
+- Fresh clone verification passes.
 - README install command is correct.
 - No `.logdiet/runs` or `.logdiet/backup` files are committed.
 - Tag release:
 
 ```sh
+./scripts/verify-release.sh
 git tag v0.1.0
 git push origin v0.1.0
 ```

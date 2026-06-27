@@ -7,6 +7,29 @@ Put your coding agent on a token diet.
 
 LogDiet keeps full command logs locally and feeds AI coding agents compact, expandable evidence instead of noisy terminal walls.
 
+## TL;DR
+
+LogDiet is for AI coding-agent sessions where terminal output eats too much context.
+
+It:
+
+- captures full command output locally;
+- shows the agent compact evidence;
+- lets the agent expand exact raw lines with `show`, `raw`, and `grep`;
+- works with project-local PATH shims;
+- supports Codex, Claude Code, Cursor, Antigravity, and generic terminal agents.
+
+## For AI agents
+
+When LogDiet is installed and `.logdiet/bin` is first in PATH:
+
+- run normal commands such as `go test ./...`, `pytest`, `npm test`, `git diff`, or `rg`;
+- read the compact evidence LogDiet prints;
+- use `logdiet show latest:F1 --around 40` when a handle needs expansion;
+- use `logdiet raw latest` only when the compact output is insufficient;
+- use `logdiet grep latest "pattern"` to search exact raw output;
+- do not ask the user to paste full logs unless `raw`, `show`, and `grep` are insufficient.
+
 ## Try It In 60 Seconds
 
 ```sh
@@ -15,15 +38,19 @@ logdiet install
 eval "$(logdiet env)"
 logdiet doctor
 logdiet wrap -- go test ./...
-logdiet raw latest --tail 40
-logdiet grep latest "panic"
 ```
 
-PowerShell activation:
+PowerShell:
 
 ```powershell
+go install github.com/yoon-sang-won/LogDiet/cmd/logdiet@latest
+logdiet install
 Invoke-Expression (logdiet env --shell powershell)
+logdiet doctor
+logdiet wrap -- go test ./...
 ```
+
+`@latest` works best after a release tag exists.
 
 ## Why LogDiet Exists
 
@@ -54,9 +81,12 @@ summary: 2 failed, 31 passed
 F1 tests/test_api.py:42 AssertionError: expected 200, got 500
 F2 tests/test_auth.py:17 ValueError: missing token
 show: logdiet show latest:F1 --around 40
-raw: logdiet raw latest
+raw:  logdiet raw latest
+grep: logdiet grep latest "pattern"
 stats: raw=18420B compact=610B approx_saved=96.7%
 ```
+
+This example is synthetic.
 
 The raw output is still available locally under `.logdiet/runs/<run-id>/`.
 
@@ -91,6 +121,8 @@ eval "$(logdiet env)"
 logdiet doctor
 ```
 
+Cursor rules path: `.cursor/rules/logdiet.mdc`.
+
 ### Antigravity
 
 ```sh
@@ -99,6 +131,8 @@ logdiet setup antigravity
 eval "$(logdiet env)"
 logdiet doctor
 ```
+
+Antigravity rules path: `.agents/rules/logdiet.md`.
 
 ### Generic Terminal Agents
 
@@ -111,6 +145,18 @@ logdiet doctor
 ```
 
 `setup` installs local shims and a managed rule file for the selected agent. It does not edit shell profiles.
+
+## Trust but verify
+
+To verify a release from a fresh clone:
+
+```sh
+git clone https://github.com/yoon-sang-won/LogDiet
+cd LogDiet
+./scripts/verify-release.sh
+```
+
+For manual verification, see [docs/verification.md](docs/verification.md).
 
 ## Raw Expansion
 
@@ -261,6 +307,7 @@ LogDiet is standard-library-only Go. Do not add network calls, telemetry, or thi
 Run the release checklist in [docs/release-checklist.md](docs/release-checklist.md).
 
 ```sh
+./scripts/verify-release.sh
 git tag v0.1.0
 git push origin v0.1.0
 ```
